@@ -5,6 +5,140 @@ All notable changes to the Nextcloud Log Analyzer will be documented in this fil
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [17.7.0] - 2025-11-18
+
+### 🔄 Sortierbare Spalten in Detail-Ansicht
+
+Alle Spalten in den Detail-Ansichten können nun durch Klick auf die Spaltenüberschrift sortiert werden.
+
+### Added
+- **Spalten-Sortierung** 🔽🔼
+  - Klick auf Spaltenüberschrift sortiert die Spalte
+  - Erneuter Klick wechselt Sortierrichtung (aufsteigend ↑ / absteigend ↓)
+  - Sortier-Indikator (Pfeil) zeigt aktuelle Sortierung
+  - Funktioniert für alle 6 Spalten: Zeit, Typ, Error Code, Datei, Zeile, Nachricht
+  
+- **Intelligente Sortierung**
+  - **Zeile**: Numerische Sortierung (1, 2, 10, 20 statt 1, 10, 2, 20)
+  - **Andere Spalten**: Alphabetische Sortierung (case-insensitive)
+  - Sortierung bleibt bei aktiver Suche erhalten
+
+### Use Cases
+- **Nach Zeit sortieren**: Chronologische oder umgekehrte Reihenfolge
+- **Nach Datei sortieren**: Alle Einträge einer Datei gruppieren
+- **Nach Error Code sortieren**: Gleiche Fehler zusammen anzeigen
+- **Nach Zeile sortieren**: Fehler in Log-Reihenfolge analysieren
+- **Nach Typ sortieren**: Fehlertypen gruppiert betrachten
+
+### Example
+```
+Klick auf "Datei" → Sortiert nach Dateinamen (nextcloud.log → nextcloud.log.1)
+Klick auf "Zeile" → Sortiert numerisch (Zeile 5 → 10 → 120 → 1250)
+Klick auf "Error Code" → Gruppiert gleiche Fehler (401, 401, 404, 404, 500)
+```
+
+### Technical
+- Sortierung erfolgt im UI (Treeview), nicht in Daten
+- Pfeil-Indikatoren (↑↓) zeigen Sortierrichtung
+- Spaltenname-Dictionary verhindert Pfeil-Duplikation
+- `tree.move()` für performante Neuanordnung
+
+## [17.6.0] - 2025-11-18
+
+### 📂 Source File and Line Number Tracking
+
+Added file name and line number tracking for better log traceability, especially useful when analyzing multiple log files.
+
+### Added
+- **Source File Column** 📄
+  - Shows the filename where each log entry originated
+  - Displays "Zwischenablage" for entries from clipboard
+  - Visible in all detail views
+  - Searchable in the search field
+  - Included in Markdown and Excel exports
+
+- **Line Number Column** #️⃣
+  - Shows the exact line number in the source file
+  - Helps locate errors in original log files
+  - Visible in all detail views
+  - Searchable in the search field
+  - Included in Markdown and Excel exports
+
+### Changed
+- Detail window width increased from 1200px to 1400px to accommodate new columns
+- Column layout optimized:
+  - Zeit: 180px
+  - Typ: 120px (reduced from 150px)
+  - Error Code: 100px (reduced from 120px)
+  - **Datei: 180px** (NEW)
+  - **Zeile: 80px** (NEW)
+  - Nachricht: 700px
+- Markdown export now includes 6 columns: Zeit, Typ, Error Code, Datei, Zeile, Nachricht
+- Excel export now includes 6 columns with same structure
+- Search functionality extended to search in source_file and line_number fields
+
+### Use Cases
+- **Multi-File Analysis**: Quickly see which log file contains errors
+- **Error Location**: Jump to exact line in original file for deeper investigation
+- **Cross-Reference**: Match errors between different log files by line context
+- **Support Workflows**: Provide exact file and line references in support tickets
+
+### Example
+```
+Entry shows:
+Zeit: 2025-11-18 10:15:23
+Typ: HTTP 404
+Error Code: 404
+Datei: nextcloud.log.gz
+Zeile: 12547
+Nachricht: urn:oid:12345 - GET https://...
+
+→ Support can now: "Please check line 12547 in nextcloud.log.gz"
+```
+
+### Technical
+- Parser methods now accept `source_file` and `line_number` parameters
+- All `add_entry()` calls include source tracking
+- Backward compatible with missing fields (shows "-")
+
+## [17.5.0] - 2025-11-18
+
+### 🔎 Search Functionality
+
+Added powerful search functionality to detail views for quick filtering of log entries.
+
+### Added
+- **Search Field** 🔍
+  - Search bar at top of all detail windows
+  - Real-time filtering of displayed entries
+  - Searches across all columns: Zeit, Typ, Error Code, Nachricht
+  - Case-insensitive search
+  - Shows result count in window title (e.g., "50 von 1000 Einträgen")
+
+- **Search Controls**
+  - 🔍 "Suchen" button to apply search
+  - ✗ "Zurücksetzen" button to clear search and show all entries
+  - Enter key support for quick searching
+
+### Changed
+- Detail window height increased from 500px to 550px to accommodate search bar
+- Window title now updates dynamically with filtered result count
+
+### Use Cases
+- Find specific files: Search for "document.pdf"
+- Find specific users: Search for username
+- Find specific errors: Search for "401" or "paas-auth"
+- Find time periods: Search for "2025-11-18 10:"
+- Narrow down large result sets quickly
+
+### Example
+```
+Opening "S3 HTTP Fehler" with 5000 entries
+→ Search: "urn:oid:12345"
+→ Result: Shows only entries with that file
+→ Title updates: "S3 HTTP Fehler (3 von 5000 Einträgen)"
+```
+
 ## [17.4.0] - 2025-11-18
 
 ### 🏷️ Error Code Column

@@ -47,12 +47,14 @@ class ClientLogParser:
         
         logger.info("ClientLogParser initialized")
     
-    def parse_line(self, line: str) -> bool:
+    def parse_line(self, line: str, source_file: str = "", line_number: int = 0) -> bool:
         """
         Parse a single text log line.
         
         Args:
             line: Raw log line string
+            source_file: Name of the source log file
+            line_number: Line number in the source file
             
         Returns:
             True if successfully parsed, False otherwise
@@ -66,10 +68,10 @@ class ClientLogParser:
             
             # Check for errors/warnings
             if self._is_error_level(level_str, message):
-                self._store_error(timestamp, message)
+                self._store_error(timestamp, message, source_file, line_number)
             
             # Check for story events
-            self._check_story_patterns(timestamp, message)
+            self._check_story_patterns(timestamp, message, source_file, line_number)
             
             return True
             
@@ -94,13 +96,15 @@ class ClientLogParser:
             "Error transferring" in message
         )
     
-    def _store_error(self, timestamp: str, message: str) -> None:
+    def _store_error(self, timestamp: str, message: str, source_file: str = "", line_number: int = 0) -> None:
         """
         Store error entry in data store.
         
         Args:
             timestamp: Log timestamp
             message: Error message
+            source_file: Name of the source log file
+            line_number: Line number in the source file
         """
         # Extract error code from client message
         error_code = self._extract_error_code(message)
@@ -109,7 +113,9 @@ class ClientLogParser:
             "time": timestamp,
             "type": "Client Error",
             "msg": message,
-            "error_code": error_code
+            "error_code": error_code,
+            "source_file": source_file,
+            "line_number": line_number
         })
     
     def _extract_error_code(self, message: str) -> Optional[str]:
@@ -143,13 +149,15 @@ class ClientLogParser:
         
         return None
     
-    def _check_story_patterns(self, timestamp: str, message: str) -> None:
+    def _check_story_patterns(self, timestamp: str, message: str, source_file: str = "", line_number: int = 0) -> None:
         """
         Check message against story patterns and store matches.
         
         Args:
             timestamp: Log timestamp
             message: Log message
+            source_file: Name of the source log file
+            line_number: Line number in the source file
         """
         for pattern, event_name in self.story_patterns:
             match = pattern.search(message)
@@ -158,7 +166,9 @@ class ClientLogParser:
                 self.data_store.add_entry("client_events", {
                     "time": timestamp,
                     "type": event_name,
-                    "msg": details
+                    "msg": details,
+                    "source_file": source_file,
+                    "line_number": line_number
                 })
                 break  # Only match first pattern
     

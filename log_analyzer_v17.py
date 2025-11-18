@@ -562,6 +562,9 @@ class LogAnalyzerApp(TkinterDnD.Tk if HAS_DND else tk.Tk):
         line_count = 0
         bytes_read = 0
         
+        # Extract filename for display (if file)
+        source_filename = os.path.basename(source) if is_file else "Zwischenablage"
+        
         # Open file or use provided lines
         if is_file:
             with open_file(source, 'r', encoding='utf-8') as f:
@@ -579,7 +582,7 @@ class LogAnalyzerApp(TkinterDnD.Tk if HAS_DND else tk.Tk):
                     line_count += 1
                     bytes_read += len(line.encode('utf-8', 'ignore'))
                     
-                    self._parse_line(line, log_format)
+                    self._parse_line(line, log_format, source_filename, line_count)
                     
                     # Update progress periodically
                     if line_count % PROGRESS_UPDATE_INTERVAL == 0:
@@ -591,7 +594,7 @@ class LogAnalyzerApp(TkinterDnD.Tk if HAS_DND else tk.Tk):
             
             for line in source:
                 line_count += 1
-                self._parse_line(line, log_format)
+                self._parse_line(line, log_format, source_filename, line_count)
                 
                 if line_count % PROGRESS_UPDATE_INTERVAL == 0:
                     self._update_progress(line_count)
@@ -636,18 +639,20 @@ class LogAnalyzerApp(TkinterDnD.Tk if HAS_DND else tk.Tk):
         logger.warning(f"Unknown log format: {line[:50]}")
         return LogFormat.UNKNOWN
     
-    def _parse_line(self, line: str, log_format: LogFormat):
+    def _parse_line(self, line: str, log_format: LogFormat, source_file: str = "", line_number: int = 0):
         """
         Parse a single log line.
         
         Args:
             line: Log line
             log_format: Detected format
+            source_file: Name of the source file
+            line_number: Line number in the source file
         """
         if log_format == LogFormat.JSON_SERVER:
-            self.server_parser.parse_line(line)
+            self.server_parser.parse_line(line, source_file, line_number)
         elif log_format == LogFormat.TEXT_CLIENT:
-            self.client_parser.parse_line(line)
+            self.client_parser.parse_line(line, source_file, line_number)
     
     def _update_progress(self, value: int):
         """
@@ -808,19 +813,78 @@ class LogAnalyzerApp(TkinterDnD.Tk if HAS_DND else tk.Tk):
         
         # Create window
         win = tk.Toplevel(self)
-        win.geometry("1200x500")
+        win.geometry("1400x550")
         win.title(f"{title} ({len(entries):,} Einträge)")
         
-        # Create treeview with error_code column
-        tree = ttk.Treeview(win, columns=("time", "type", "error_code", "msg"), show="headings")
-        tree.heading("time", text="Zeitstempel")
-        tree.heading("type", text="Typ/App")
-        tree.heading("error_code", text="Error Code")
-        tree.heading("msg", text="Nachricht / Datei")
+        # Search frame at the top
+        search_frame = ttk.Frame(win)
+        search_frame.pack(fill="x", padx=10, pady=(10, 5))
+        
+        ttk.Label(search_frame, text="🔎 Suche:").pack(side="left", padx=(0, 5))
+        search_var = tk.StringVar()
+        search_entry = ttk.Entry(search_frame, textvariable=search_var, width=40)
+        search_entry.pack(side="left", padx=(0, 5))
+        
+        # Store original entries for filtering
+        self._detail_entries = entries.copy()
+        self._detail_tree = None  # Will be set below
+        self._sort_reverse = {}  # Track sort direction per column
+        self._column_names = {  # Store original column names
+            "time": "Zeitstempel",
+            "type": "Typ/App",
+            "error_code": "Error Code",
+            "source_file": "Datei",
+            "line_number": "Zeile",
+            "msg": "Nachricht"
+        }
+        
+        # Create treeview with 6 columns including source_file and line_number
+        tree = ttk.Treeview(win, columns=("time", "type", "error_code", "source_file", "line_number", "msg"), show="headings")
+        self._detail_tree = tree  # Store reference for search
+        
+        # Column sorting function
+        def sort_column(col):
+            """Sort treeview by column."""
+            # Toggle sort direction
+            reverse = not self._sort_reverse.get(col, False)
+            self._sort_reverse[col] = reverse
+            
+            # Get all items
+            items = [(tree.set(item, col), item) for item in tree.get_children('')]
+            
+            # Sort items - special handling for line_number (numeric)
+            if col == "line_number":
+                # Numeric sort
+                items.sort(key=lambda x: int(x[0]) if x[0].isdigit() else 0, reverse=reverse)
+            else:
+                # String sort (case-insensitive)
+                items.sort(key=lambda x: x[0].lower(), reverse=reverse)
+            
+            # Rearrange items in sorted order
+            for index, (val, item) in enumerate(items):
+                tree.move(item, '', index)
+            
+            # Update column heading to show sort direction
+            for c in tree['columns']:
+                if c == col:
+                    tree.heading(c, text=f"{self._column_names[c]} {'↓' if reverse else '↑'}")
+                else:
+                    # Reset to original name without sort indicator
+                    tree.heading(c, text=self._column_names[c])
+        
+        # Configure headings with sort command
+        tree.heading("time", text="Zeitstempel", command=lambda: sort_column("time"))
+        tree.heading("type", text="Typ/App", command=lambda: sort_column("type"))
+        tree.heading("error_code", text="Error Code", command=lambda: sort_column("error_code"))
+        tree.heading("source_file", text="Datei", command=lambda: sort_column("source_file"))
+        tree.heading("line_number", text="Zeile", command=lambda: sort_column("line_number"))
+        tree.heading("msg", text="Nachricht", command=lambda: sort_column("msg"))
         
         tree.column("time", width=180, stretch=False)
-        tree.column("type", width=150, stretch=False)
-        tree.column("error_code", width=120, stretch=False)
+        tree.column("type", width=120, stretch=False)
+        tree.column("error_code", width=100, stretch=False)
+        tree.column("source_file", width=180, stretch=False)
+        tree.column("line_number", width=80, stretch=False)
         tree.column("msg", width=700)
         
         # Scrollbar
@@ -829,14 +893,64 @@ class LogAnalyzerApp(TkinterDnD.Tk if HAS_DND else tk.Tk):
         scrollbar.pack(side="right", fill="y")
         tree.pack(fill="both", expand=True)
         
-        # Populate
+        # Populate initially
         for entry in entries:
             tree.insert("", "end", values=(
                 entry.get("time", ""),
                 entry.get("type", ""),
                 entry.get("error_code", "-"),
+                entry.get("source_file", "-"),
+                entry.get("line_number", "-"),
                 entry.get("msg", "")
             ))
+        
+        # Search functionality
+        def apply_search(*args):
+            """Filter tree based on search term."""
+            search_term = search_var.get().strip().lower()
+            
+            # Clear tree
+            for item in tree.get_children():
+                tree.delete(item)
+            
+            # Re-populate with filtered entries
+            if not search_term:
+                # Show all if search is empty
+                filtered = self._detail_entries
+            else:
+                # Filter entries
+                filtered = [
+                    entry for entry in self._detail_entries
+                    if search_term in entry.get("time", "").lower()
+                    or search_term in entry.get("type", "").lower()
+                    or search_term in str(entry.get("error_code", "") or "").lower()
+                    or search_term in str(entry.get("source_file", "") or "").lower()
+                    or search_term in str(entry.get("line_number", "") or "").lower()
+                    or search_term in entry.get("msg", "").lower()
+                ]
+            
+            # Insert filtered entries
+            for entry in filtered:
+                tree.insert("", "end", values=(
+                    entry.get("time", ""),
+                    entry.get("type", ""),
+                    entry.get("error_code", "-"),
+                    entry.get("source_file", "-"),
+                    entry.get("line_number", "-"),
+                    entry.get("msg", "")
+                ))
+            
+            # Update window title with result count
+            win.title(f"{title} ({len(filtered):,} von {len(self._detail_entries):,} Einträgen)")
+        
+        # Search button and clear button
+        ttk.Button(search_frame, text="🔍 Suchen", 
+                  command=apply_search).pack(side="left", padx=5)
+        ttk.Button(search_frame, text="✗ Zurücksetzen", 
+                  command=lambda: [search_var.set(""), apply_search()]).pack(side="left")
+        
+        # Search on Enter key
+        search_entry.bind("<Return>", apply_search)
         
         # Export button
         btn_frame = ttk.Frame(win)
@@ -859,14 +973,14 @@ class LogAnalyzerApp(TkinterDnD.Tk if HAS_DND else tk.Tk):
         self.clipboard_clear()
         
         # Header
-        markdown = "| Zeit | Typ | Error Code | Nachricht |\n|---|---|---|---|\n"
+        markdown = "| Zeit | Typ | Error Code | Datei | Zeile | Nachricht |\n|---|---|---|---|---|---|\n"
         
         # Rows
         for item_id in tree.get_children():
             values = tree.item(item_id, 'values')
             # Escape pipes in content
             escaped = [str(v).replace('|', '\\|') for v in values]
-            markdown += f"| {escaped[0]} | {escaped[1]} | {escaped[2]} | {escaped[3]} |\n"
+            markdown += f"| {escaped[0]} | {escaped[1]} | {escaped[2]} | {escaped[3]} | {escaped[4]} | {escaped[5]} |\n"
         
         self.clipboard_append(markdown)
         messagebox.showinfo("✓ Kopiert", "Markdown-Tabelle in Zwischenablage kopiert!")
@@ -894,7 +1008,7 @@ class LogAnalyzerApp(TkinterDnD.Tk if HAS_DND else tk.Tk):
             ws.title = title[:31]  # Excel limit
             
             # Headers
-            ws.append(["Zeitstempel", "Typ", "Error Code", "Nachricht"])
+            ws.append(["Zeitstempel", "Typ", "Error Code", "Datei", "Zeile", "Nachricht"])
             
             # Data
             for entry in entries:
@@ -902,6 +1016,8 @@ class LogAnalyzerApp(TkinterDnD.Tk if HAS_DND else tk.Tk):
                     entry.get("time", ""),
                     entry.get("type", ""),
                     entry.get("error_code", "-"),
+                    entry.get("source_file", "-"),
+                    entry.get("line_number", "-"),
                     entry.get("msg", "")
                 ])
             

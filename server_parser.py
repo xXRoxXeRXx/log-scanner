@@ -34,19 +34,21 @@ class ServerLogParser:
         
         logger.info("ServerLogParser initialized")
     
-    def parse_line(self, line: str) -> bool:
+    def parse_line(self, line: str, source_file: str = "", line_number: int = 0) -> bool:
         """
         Parse a single JSON log line.
         
         Args:
             line: Raw log line string
+            source_file: Name of the source log file
+            line_number: Line number in the source file
             
         Returns:
             True if successfully parsed and stored, False otherwise
         """
         try:
             data = json.loads(line)
-            return self._categorize_entry(data)
+            return self._categorize_entry(data, source_file, line_number)
         except json.JSONDecodeError as e:
             logger.debug(f"Failed to parse JSON line: {e}")
             return False
@@ -54,12 +56,14 @@ class ServerLogParser:
             logger.error(f"Unexpected error parsing line: {e}")
             return False
     
-    def _categorize_entry(self, data: Dict[str, Any]) -> bool:
+    def _categorize_entry(self, data: Dict[str, Any], source_file: str = "", line_number: int = 0) -> bool:
         """
         Categorize and store a parsed log entry.
         
         Args:
             data: Parsed JSON log entry
+            source_file: Name of the source log file
+            line_number: Line number in the source file
             
         Returns:
             True if entry was stored, False otherwise
@@ -84,7 +88,9 @@ class ServerLogParser:
                 "type": f"HTTP {http_code}",
                 "msg": oid or msg[:100],
                 "user": user,
-                "error_code": error_code or http_code
+                "error_code": error_code or http_code,
+                "source_file": source_file,
+                "line_number": line_number
             })
         
         # Priority 2: DAV Errors
@@ -94,7 +100,9 @@ class ServerLogParser:
                 "type": "WebDAV Error",
                 "msg": msg[:100],
                 "user": user,
-                "error_code": error_code
+                "error_code": error_code,
+                "source_file": source_file,
+                "line_number": line_number
             })
         
         # Priority 3: Objectstore Errors
@@ -104,7 +112,9 @@ class ServerLogParser:
                 "type": "Objectstore",
                 "msg": msg[:100],
                 "user": user,
-                "error_code": error_code
+                "error_code": error_code,
+                "source_file": source_file,
+                "line_number": line_number
             })
         
         # Priority 4: PHP Errors
@@ -114,7 +124,9 @@ class ServerLogParser:
                 "type": "PHP Error",
                 "msg": msg[:100],
                 "user": user,
-                "error_code": error_code
+                "error_code": error_code,
+                "source_file": source_file,
+                "line_number": line_number
             })
         
         # Priority 5: Other Errors (level 3)
@@ -124,7 +136,9 @@ class ServerLogParser:
                 "type": "Error",
                 "msg": msg[:100],
                 "user": user,
-                "error_code": error_code
+                "error_code": error_code,
+                "source_file": source_file,
+                "line_number": line_number
             })
         
         # Priority 6: Warnings (level 2)
@@ -134,7 +148,9 @@ class ServerLogParser:
                 "type": app or "Warning",
                 "msg": msg[:100],
                 "user": user,
-                "error_code": error_code
+                "error_code": error_code,
+                "source_file": source_file,
+                "line_number": line_number
             })
         
         # Priority 7: Info (level 1)
@@ -144,7 +160,9 @@ class ServerLogParser:
                 "type": app or "Info",
                 "msg": msg[:100],
                 "user": user,
-                "error_code": error_code
+                "error_code": error_code,
+                "source_file": source_file,
+                "line_number": line_number
             })
         
         # Priority 8: Debug (level 0)
@@ -154,7 +172,9 @@ class ServerLogParser:
                 "type": app or "Debug",
                 "msg": msg[:100],
                 "user": user,
-                "error_code": error_code
+                "error_code": error_code,
+                "source_file": source_file,
+                "line_number": line_number
             })
         
         return False
