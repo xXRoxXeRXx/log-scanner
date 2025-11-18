@@ -31,7 +31,6 @@ Eine professionelle Desktop-Anwendung zur Analyse von Nextcloud Server- und Clie
 ```
 log-scanner/
 ├── log_analyzer_v17.py # Haupt-GUI-Anwendung
-├── log_scanner.py      # Convenience Wrapper
 ├── config.py           # Zentrale Konfiguration
 ├── data_store.py       # Thread-sichere Datenverwaltung
 ├── server_parser.py    # JSON Server-Log Parser
@@ -65,7 +64,7 @@ cd log-scanner
 pip install -r requirements.txt
 
 # 3. Anwendung starten
-python log_scanner.py
+python log_analyzer_v17.py
 ```
 
 **Hinweis:** Falls `tkinter` fehlt (meist nur Linux):
@@ -112,7 +111,7 @@ Die App funktioniert auch ohne diese - Features sind dann deaktiviert:
 1. **Anwendung starten**
    ```powershell
    # Empfohlen - Einfacher Startbefehl
-   python log_scanner.py
+   python log_analyzer_v17.py
    
    # Oder direkt die Hauptdatei
    python log_analyzer_v17.py
