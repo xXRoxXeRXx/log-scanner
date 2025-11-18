@@ -72,6 +72,11 @@ class LogAnalyzerApp(TkinterDnD.Tk if HAS_DND else tk.Tk):
         self.analysis_thread: Optional[threading.Thread] = None
         self.analysis_running = False
         
+        # Multi-file support
+        self.file_queue: List[str] = []
+        self.current_file_index = 0
+        self.total_files = 0
+        
         # Setup GUI
         self.setup_gui()
         
@@ -99,6 +104,7 @@ class LogAnalyzerApp(TkinterDnD.Tk if HAS_DND else tk.Tk):
         btn_frame.pack(side="right", anchor="n")
         
         ttk.Button(btn_frame, text="📂 Datei suchen...", command=self.browse_file).pack(fill="x", pady=(0, 5))
+        ttk.Button(btn_frame, text="📂📂 Mehrere Dateien...", command=self.browse_multiple_files).pack(fill="x", pady=(0, 5))
         
         if ENABLE_CLIPBOARD_IMPORT:
             ttk.Button(btn_frame, text="📋 Aus Zwischenablage", command=self.paste_and_analyze).pack(fill="x")
@@ -163,15 +169,33 @@ class LogAnalyzerApp(TkinterDnD.Tk if HAS_DND else tk.Tk):
         ]
         path = filedialog.askopenfilename(filetypes=file_types)
         if path:
-            self.start_analysis(path, is_file=True)
+            self.start_analysis([path], is_file=True)
+    
+    def browse_multiple_files(self):
+        """Open file dialog for multiple files and start batch analysis."""
+        file_types = [
+            ("Log Dateien", " ".join(f"*{ext}" for ext in SUPPORTED_EXTENSIONS)),
+            ("Alle Dateien", "*.*")
+        ]
+        paths = filedialog.askopenfilenames(filetypes=file_types)
+        if paths:
+            self.start_analysis(list(paths), is_file=True)
     
     def on_drop(self, event):
         """Handle drag & drop event."""
-        path = event.data.strip('{}')
-        if os.path.isfile(path):
-            self.start_analysis(path, is_file=True)
+        paths_str = event.data.strip('{}')
+        # Split by spaces but respect quoted paths
+        if '} {' in paths_str:
+            paths = [p.strip('{}') for p in paths_str.split('} {')]
         else:
-            messagebox.showerror("Fehler", "Ungültige Datei")
+            paths = [paths_str]
+        
+        valid_files = [p for p in paths if os.path.isfile(p)]
+        
+        if valid_files:
+            self.start_analysis(valid_files, is_file=True)
+        else:
+            messagebox.showerror("Fehler", "Keine gültige Datei gefunden")
     
     def paste_and_analyze(self):
         """Analyze text from clipboard."""
@@ -190,34 +214,44 @@ class LogAnalyzerApp(TkinterDnD.Tk if HAS_DND else tk.Tk):
         Start log analysis with validation.
         
         Args:
-            source: File path (str) or line list (List[str])
-            is_file: True if source is a file path
+            source: File path list (List[str]) or line list (List[str])
+            is_file: True if source contains file paths
         """
         # Prevent concurrent analysis
         if self.analysis_running:
             messagebox.showwarning("Warnung", "Analyse läuft bereits")
             return
         
-        # Validate file
+        # Handle single file for backward compatibility
+        if is_file and isinstance(source, str):
+            source = [source]
+        
+        # Validate files
         if is_file:
-            validation_error = self._validate_file(source)
-            if validation_error:
-                messagebox.showerror("Fehler", validation_error)
+            valid_files = []
+            for filepath in source:
+                validation_error = self._validate_file(filepath)
+                if validation_error:
+                    logger.warning(f"Skipping invalid file {filepath}: {validation_error}")
+                    continue
+                valid_files.append(filepath)
+            
+            if not valid_files:
+                messagebox.showerror("Fehler", "Keine gültigen Dateien gefunden")
                 return
+            
+            self.file_queue = valid_files
+            self.total_files = len(valid_files)
+        else:
+            self.file_queue = [source]  # clipboard content
+            self.total_files = 1
         
         # Reset UI and data
         self._reset_for_new_analysis()
         
-        # Determine if threading is needed
-        use_threading = False
-        if is_file and ENABLE_THREADING:
-            file_size = os.path.getsize(source)
-            use_threading = file_size > get_large_file_threshold_bytes()
-        
-        if use_threading:
-            self._start_threaded_analysis(source, is_file)
-        else:
-            self._start_sync_analysis(source, is_file)
+        # Start processing queue
+        self.current_file_index = 0
+        self._process_next_file()
     
     def _validate_file(self, filepath: str) -> Optional[str]:
         """
@@ -265,10 +299,43 @@ class LogAnalyzerApp(TkinterDnD.Tk if HAS_DND else tk.Tk):
         self.summary_text.insert(tk.END, "🔍 Analysiere...\n", "h1")
         self.update_idletasks()
     
+    def _process_next_file(self):
+        """Process next file in queue."""
+        if self.current_file_index >= len(self.file_queue):
+            # All files processed
+            self._finalize_analysis()
+            return
+        
+        current_source = self.file_queue[self.current_file_index]
+        is_file = not isinstance(current_source, list)
+        
+        # Update progress label
+        if self.total_files > 1:
+            self.summary_text.insert(tk.END, 
+                f"\n📄 Datei {self.current_file_index + 1} von {self.total_files}\n", "h2")
+            if is_file:
+                filename = os.path.basename(current_source)
+                self.summary_text.insert(tk.END, f"   {filename}\n", "info")
+            self.update_idletasks()
+        
+        # Determine if threading is needed
+        use_threading = False
+        if is_file and ENABLE_THREADING:
+            file_size = os.path.getsize(current_source)
+            use_threading = file_size > get_large_file_threshold_bytes()
+        
+        if use_threading:
+            self._start_threaded_analysis(current_source, is_file)
+        else:
+            self._start_sync_analysis(current_source, is_file)
+    
     def _start_sync_analysis(self, source, is_file: bool):
         """Run analysis synchronously (blocking)."""
         try:
             self._run_analysis(source, is_file)
+            # Move to next file after completion
+            self.current_file_index += 1
+            self._process_next_file()
         except Exception as e:
             logger.exception("Analysis failed")
             self._show_analysis_error(e)
@@ -288,6 +355,9 @@ class LogAnalyzerApp(TkinterDnD.Tk if HAS_DND else tk.Tk):
         """Thread worker for analysis."""
         try:
             self._run_analysis(source, is_file)
+            # Move to next file after completion
+            self.current_file_index += 1
+            self.after(0, self._process_next_file)
         except Exception as e:
             logger.exception("Threaded analysis failed")
             self.after(0, lambda: self._show_analysis_error(e))
@@ -308,7 +378,7 @@ class LogAnalyzerApp(TkinterDnD.Tk if HAS_DND else tk.Tk):
         
         # Open file or use provided lines
         if is_file:
-            with open(source, 'r', encoding='utf-8', errors='ignore') as f:
+            with open_file(source, 'r', encoding='utf-8') as f:
                 # Detect format
                 first_line = f.readline()
                 log_format = self._detect_format(first_line)
@@ -340,12 +410,21 @@ class LogAnalyzerApp(TkinterDnD.Tk if HAS_DND else tk.Tk):
                 if line_count % PROGRESS_UPDATE_INTERVAL == 0:
                     self._update_progress(line_count)
         
-        # Finalize
+        # Don't show summary here anymore (wait for all files)
         duration = time.time() - start_time
         self._update_progress(self.progress['maximum'])
-        self._show_summary(line_count, log_format, duration)
         
         logger.info(f"Analysis complete: {line_count} lines in {duration:.2f}s")
+    
+    def _finalize_analysis(self):
+        """Show summary after all files are processed."""
+        self.summary_text.delete(1.0, tk.END)
+        
+        # Show file summary if multiple files
+        if self.total_files > 1:
+            self.summary_text.insert(tk.END, f"✅ {self.total_files} Dateien verarbeitet\n\n", "h1")
+        
+        self._show_summary(0, LogFormat.UNKNOWN, 0)
     
     def _detect_format(self, first_line: str) -> LogFormat:
         """
@@ -399,23 +478,34 @@ class LogAnalyzerApp(TkinterDnD.Tk if HAS_DND else tk.Tk):
         Display analysis summary.
         
         Args:
-            line_count: Number of processed lines
-            log_format: Detected log format
-            duration: Analysis duration in seconds
+            line_count: Number of processed lines (ignored in multi-file mode)
+            log_format: Detected log format (ignored in multi-file mode)
+            duration: Analysis duration in seconds (ignored in multi-file mode)
         """
         def _display():
-            self.summary_text.delete(1.0, tk.END)
-            self.summary_text.insert(tk.END, 
-                f"✅ Fertig in {duration:.2f}s ({line_count:,} Zeilen)\n"
-                f"Format: {log_format.value}\n\n", "h2")
+            self.summary_text.insert(tk.END, "📊 Zusammenfassung:\n", "h1")
             
-            if log_format == LogFormat.TEXT_CLIENT:
+            # Show both client and server summaries (may have mixed logs)
+            client_count = (self.data_store.get_count("client_events") + 
+                           self.data_store.get_count("client_errors"))
+            server_count = (self.data_store.get_count("s3_errors") +
+                           self.data_store.get_count("dav_errors") +
+                           self.data_store.get_count("php_errors") +
+                           self.data_store.get_count("objectstore_errors") +
+                           self.data_store.get_count("other_errors") +
+                           self.data_store.get_count("server_warnings") +
+                           self.data_store.get_count("server_info") +
+                           self.data_store.get_count("server_debug"))
+            
+            if client_count > 0:
                 self._show_client_summary()
-            elif log_format == LogFormat.JSON_SERVER:
+            
+            if server_count > 0:
                 self._show_server_summary()
-            else:
+            
+            if client_count == 0 and server_count == 0:
                 self.summary_text.insert(tk.END, 
-                    "⚠️ Unbekanntes Format - keine Analyse möglich\n", "warning")
+                    "⚠️ Keine Einträge gefunden\n", "warning")
             
             # Show overflow warnings
             self._show_overflow_warnings()

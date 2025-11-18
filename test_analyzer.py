@@ -3,9 +3,13 @@ Unit tests for Nextcloud Log Analyzer
 """
 import unittest
 import json
+import gzip
+import os
+import tempfile
 from data_store import LogDataStore
 from server_parser import ServerLogParser
 from client_parser import ClientLogParser
+from config import open_file, is_gzip_file
 
 
 class TestLogDataStore(unittest.TestCase):
@@ -158,6 +162,75 @@ class TestClientLogParser(unittest.TestCase):
         """Test handling invalid line format"""
         result = self.parser.parse_line("invalid log line format")
         self.assertFalse(result)
+
+
+class TestGzipSupport(unittest.TestCase):
+    """Test gzip file support"""
+    
+    def setUp(self):
+        """Create temporary test files"""
+        self.temp_dir = tempfile.mkdtemp()
+        self.regular_file = os.path.join(self.temp_dir, "test.log")
+        self.gzip_file = os.path.join(self.temp_dir, "test.log.gz")
+        
+        # Create regular file
+        with open(self.regular_file, 'w', encoding='utf-8') as f:
+            f.write("Line 1\nLine 2\nLine 3\n")
+        
+        # Create gzip file
+        with gzip.open(self.gzip_file, 'wt', encoding='utf-8') as f:
+            f.write("Compressed Line 1\nCompressed Line 2\n")
+    
+    def tearDown(self):
+        """Clean up temporary files"""
+        import shutil
+        shutil.rmtree(self.temp_dir)
+    
+    def test_is_gzip_file(self):
+        """Test gzip file detection"""
+        self.assertTrue(is_gzip_file("test.log.gz"))
+        self.assertTrue(is_gzip_file("test.log.gzip"))
+        self.assertFalse(is_gzip_file("test.log"))
+        self.assertFalse(is_gzip_file("test.txt"))
+    
+    def test_open_regular_file(self):
+        """Test opening regular file"""
+        with open_file(self.regular_file, 'r') as f:
+            content = f.read()
+            self.assertIn("Line 1", content)
+            self.assertIn("Line 3", content)
+    
+    def test_open_gzip_file(self):
+        """Test opening gzip file"""
+        with open_file(self.gzip_file, 'r') as f:
+            content = f.read()
+            self.assertIn("Compressed Line 1", content)
+            self.assertIn("Compressed Line 2", content)
+    
+    def test_parse_server_log_gz(self):
+        """Test parsing compressed server log"""
+        store = LogDataStore()
+        parser = ServerLogParser(store)
+        
+        # Create compressed server log
+        gz_file = os.path.join(self.temp_dir, "server.log.gz")
+        log_entry = {
+            "reqId": "test",
+            "level": 3,
+            "time": "2025-01-01T12:00:00+00:00",
+            "app": "PHP",
+            "message": "Test error"
+        }
+        
+        with gzip.open(gz_file, 'wt', encoding='utf-8') as f:
+            f.write(json.dumps(log_entry) + '\n')
+        
+        # Parse compressed file
+        with open_file(gz_file, 'r') as f:
+            for line in f:
+                parser.parse_line(line)
+        
+        self.assertEqual(store.get_count("php_errors"), 1)
 
 
 def run_tests():

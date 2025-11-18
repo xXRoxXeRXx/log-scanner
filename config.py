@@ -3,15 +3,22 @@ Configuration settings for Nextcloud Log Analyzer
 """
 from typing import Dict, Any
 import logging
+import gzip
+import os
+from pathlib import Path
 
 # Application Settings
-APP_VERSION = "17.0.0-refactored"
+APP_VERSION = "17.1.0-refactored"
 APP_TITLE = "Nextcloud Log Analyzer"
 
 # Performance & Memory Limits
 MAX_FILE_SIZE_MB = 500  # Maximum file size in MB
 MAX_ENTRIES_PER_CATEGORY = 10000  # Maximum log entries per category
 PROGRESS_UPDATE_INTERVAL = 2000  # Update UI every N lines
+
+# File Support
+SUPPORTED_EXTENSIONS = ['.log', '.txt', '.json', '.gz']  # Supported file types
+GZIP_EXTENSIONS = ['.gz', '.gzip']  # Compressed file extensions
 
 # Threading
 ENABLE_THREADING = True  # Use threading for large files
@@ -40,9 +47,6 @@ COLORS: Dict[str, str] = {
     'clickable': '#0000EE'
 }
 
-# Supported File Extensions
-SUPPORTED_EXTENSIONS = ['.log', '.txt', '.json']
-
 # Feature Flags
 ENABLE_EXCEL_EXPORT = True
 ENABLE_CLIPBOARD_IMPORT = True
@@ -55,6 +59,34 @@ def get_max_file_size_bytes() -> int:
 def get_large_file_threshold_bytes() -> int:
     """Returns large file threshold in bytes"""
     return LARGE_FILE_THRESHOLD_MB * 1024 * 1024
+
+def is_gzip_file(filepath: str) -> bool:
+    """Check if file is gzip compressed"""
+    ext = Path(filepath).suffix.lower()
+    return ext in GZIP_EXTENSIONS
+
+def open_file(filepath: str, mode: str = 'r', encoding: str = 'utf-8'):
+    """
+    Open file with automatic gzip detection
+    
+    Args:
+        filepath: Path to file
+        mode: File mode ('r' for text, 'rb' for binary)
+        encoding: Text encoding (only for text mode)
+    
+    Returns:
+        File handle (text or binary depending on mode)
+    """
+    if is_gzip_file(filepath):
+        if 'b' in mode:
+            return gzip.open(filepath, mode)
+        else:
+            return gzip.open(filepath, mode + 't', encoding=encoding)
+    else:
+        if 'b' in mode:
+            return open(filepath, mode)
+        else:
+            return open(filepath, mode, encoding=encoding)
 
 def setup_logging() -> logging.Logger:
     """Configure and return logger instance"""

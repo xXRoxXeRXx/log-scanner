@@ -1,4 +1,4 @@
-# 🔍 Nextcloud Log Analyzer v17.0
+# 🔍 Nextcloud Log Analyzer v17.1
 
 Eine professionelle Desktop-Anwendung zur Analyse von Nextcloud Server- und Client-Logs mit grafischer Benutzeroberfläche.
 
@@ -6,6 +6,8 @@ Eine professionelle Desktop-Anwendung zur Analyse von Nextcloud Server- und Clie
 
 ### Kernfunktionen
 - 📊 **Dual-Format-Support**: Analysiert JSON (Server) und Text (Client) Logs
+- 🗜️ **Kompression**: Direkte Verarbeitung von `.gz` / `.gzip` Dateien
+- 📁 **Multi-File**: Mehrere Log-Dateien gleichzeitig analysieren
 - 🎯 **Intelligente Kategorisierung**: Automatische Fehlerklassifizierung (S3, DAV, PHP, etc.)
 - 📖 **Client Story Mode**: Chronologischer Sync-Verlauf mit Ereignissen
 - 🚀 **High Performance**: Threading für große Dateien (>10 MB)
@@ -13,7 +15,7 @@ Eine professionelle Desktop-Anwendung zur Analyse von Nextcloud Server- und Clie
 - 🎨 **Moderne GUI**: Intuitive Benutzeroberfläche mit farbiger Kategorisierung
 
 ### Erweiterte Features
-- 🖱️ **Drag & Drop**: Dateien einfach in die Anwendung ziehen
+- 🖱️ **Drag & Drop**: Dateien (auch mehrere) einfach in die Anwendung ziehen
 - 📋 **Clipboard-Support**: Logs direkt aus der Zwischenablage analysieren
 - 📥 **Export**: Markdown-Tabellen & Excel-Export
 - ⚙️ **Konfigurierbar**: Alle Limits und Einstellungen anpassbar
@@ -80,17 +82,27 @@ pip install tkinterdnd2 openpyxl
 
 1. **Anwendung starten**
    ```powershell
-   python log_scanner.py
+   python log_analyzer_v17.py
+   # oder mit Batch-Datei:
+   start_v17.bat
    ```
 
-2. **Log-Datei laden**
-   - 🖱️ Drag & Drop: Datei in Fenster ziehen
-   - 📂 File Brow ser: "Datei suchen..." Button
-   - 📋 Clipboard: "Aus Zwischenablage" Button
+2. **Log-Datei(en) laden**
+   - 🖱️ **Drag & Drop**: Eine oder mehrere Dateien ins Fenster ziehen
+   - 📂 **Einzelne Datei**: "📂 Datei suchen..." Button
+   - 📂📂 **Mehrere Dateien**: "📂📂 Mehrere Dateien..." Button
+   - 📋 **Clipboard**: "📋 Aus Zwischenablage" Button
 
-3. **Ergebnisse anzeigen**
+3. **Unterstützte Dateiformate**
+   - `.log` - Reguläre Log-Dateien
+   - `.txt` - Text-Dateien
+   - `.json` - JSON-Logs
+   - `.gz` / `.gzip` - **Komprimierte Logs** (werden automatisch entpackt!)
+
+4. **Ergebnisse anzeigen**
    - Klicke auf Kategorien für Details
    - Exportiere Tabellen als Markdown oder Excel
+   - Bei mehreren Dateien: Kombinierte Analyse aller Logs
 
 ### Unterstützte Log-Formate
 

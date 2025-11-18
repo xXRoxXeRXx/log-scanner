@@ -5,6 +5,42 @@ All notable changes to the Nextcloud Log Analyzer will be documented in this fil
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [17.1.0] - 2025-11-18
+
+### 🚀 Multi-File & Compression Support
+
+Major enhancement adding batch processing and compressed file support.
+
+### Added
+- **Multi-File Processing**: Load and analyze multiple log files at once
+  - New "📂📂 Mehrere Dateien..." button for batch selection
+  - Drag & drop multiple files simultaneously
+  - Progress indicator shows "Datei X von Y"
+  - Combined results from all files in single summary
+- **GZIP Support**: Direct reading of `.gz` and `.gzip` compressed logs
+  - Automatic detection and decompression
+  - No need to manually extract files first
+  - Works with both server (JSON) and client (text) logs
+  - New `open_file()` utility function handles compression transparently
+- **Enhanced Tests**: New `TestGzipSupport` test class with 4 additional tests
+  - Test gzip file detection
+  - Test reading compressed files
+  - Test parsing compressed server logs
+  - All 18 tests passing
+- **Test Utilities**: `test_gzip_support.py` creates sample compressed logs
+
+### Changed
+- **File Selection**: `browse_file()` now returns list for consistency
+- **File Queue System**: Internal queue processes files sequentially
+- **Summary Display**: Shows combined results from all processed files
+- **Config Settings**: Added `SUPPORTED_EXTENSIONS` and `GZIP_EXTENSIONS`
+
+### Technical Details
+- Uses Python's `gzip` module for transparent compression handling
+- Queue-based architecture ensures proper sequential processing
+- Thread-safe file processing maintained for large files
+- Memory limits apply across all files (total, not per-file)
+
 ## [17.0.0] - 2025-11-18
 
 ### 🎉 Major Refactoring Release

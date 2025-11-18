@@ -5,6 +5,7 @@ from typing import Dict, List, Tuple, Pattern, Optional
 import re
 import logging
 from data_store import LogDataStore
+from config import open_file
 
 logger = logging.getLogger(__name__)
 

@@ -7,6 +7,7 @@ import urllib.parse
 import json
 import logging
 from data_store import LogDataStore
+from config import open_file
 
 logger = logging.getLogger(__name__)
 
