@@ -32,6 +32,10 @@ class ServerLogParser:
         self.oid_regex: Pattern = re.compile(r'(urn(?:%3A|:)oid(?:%3A|:)[0-9]+)')
         self.http_error_regex: Pattern = re.compile(r'HTTP/[0-9\.]+\s([45][0-9]{2})')
         
+        # Cache for tracking request IDs and detecting follow-up errors
+        # Maps reqId -> {app, exception_type, has_details}
+        self.req_id_cache: Dict[str, Dict[str, Any]] = {}
+        
         logger.info("ServerLogParser initialized")
     
     def parse_line(self, line: str, source_file: str = "", line_number: int = 0) -> bool:
@@ -66,8 +70,13 @@ class ServerLogParser:
             line_number: Line number in the source file
             
         Returns:
-            True if entry was stored, False otherwise
+            True if entry was stored, False if skipped (duplicate/follow-up)
         """
+        # Check if this is a follow-up error that should be skipped
+        if self._is_followup_error(data):
+            logger.debug(f"Skipping follow-up error for reqId: {data.get('reqId')}")
+            return False
+        
         msg = data.get('message', '')
         level = data.get('level')
         app = data.get('app', '')
@@ -246,6 +255,66 @@ class ServerLogParser:
                 return code
         
         return None
+    
+    def _is_followup_error(self, data: Dict[str, Any]) -> bool:
+        """
+        Detect if this is a follow-up/duplicate error that should be skipped.
+        
+        Nextcloud often logs the same error twice:
+        1. First with detailed info (objectstore, webdav, etc.)
+        2. Then as generic exception (index, no app in context)
+        
+        This method detects pattern #2 and filters it out.
+        
+        Args:
+            data: Parsed JSON log entry
+            
+        Returns:
+            True if this is a follow-up error that should be skipped
+        """
+        req_id = data.get('reqId')
+        if not req_id:
+            return False
+        
+        app = data.get('app', '')
+        exception = data.get('exception', {})
+        exception_type = exception.get('Exception', '')
+        exception_msg = exception.get('Message', '')
+        message = data.get('message', '')
+        
+        # Check if we've seen this reqId before
+        if req_id in self.req_id_cache:
+            prev_entry = self.req_id_cache[req_id]
+            
+            # Pattern: GenericFileException after specific error
+            if exception_type == 'OCP\\Files\\GenericFileException':
+                # Empty exception message is a strong indicator
+                if not exception_msg:
+                    # App context changed to generic
+                    if app in ['index', 'no app in context']:
+                        # Previous entry was a specific error
+                        if prev_entry.get('has_details'):
+                            logger.debug(
+                                f"Follow-up detected: reqId={req_id}, "
+                                f"prev_app={prev_entry.get('app')} -> curr_app={app}"
+                            )
+                            return True
+        
+        # Store this entry in cache for future comparisons
+        has_details = bool(
+            exception_msg or 
+            (exception_type and exception_type != 'OCP\\Files\\GenericFileException') or
+            (app and app not in ['index', 'no app in context'])
+        )
+        
+        self.req_id_cache[req_id] = {
+            'app': app,
+            'exception_type': exception_type,
+            'has_details': has_details,
+            'message': message[:100]
+        }
+        
+        return False
     
     def _extract_oid(self, message: str) -> str:
         """

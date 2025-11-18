@@ -8,7 +8,7 @@ import os
 from pathlib import Path
 
 # Application Settings
-APP_VERSION = "17.8.1"
+APP_VERSION = "17.9.0"
 APP_TITLE = "Nextcloud Log Analyzer"
 
 # Performance & Memory Limits
