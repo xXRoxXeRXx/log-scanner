@@ -108,6 +108,40 @@ class LogAnalyzerApp(TkinterDnD.Tk if HAS_DND else tk.Tk):
         if ENABLE_CLIPBOARD_IMPORT:
             ttk.Button(btn_frame, text="📋 Aus Zwischenablage", command=self.paste_and_analyze).pack(fill="x")
         
+        # Filter frame
+        filter_frame = ttk.LabelFrame(self, text="🔍 Filter", padding=10)
+        filter_frame.pack(fill="x", padx=10, pady=(10, 5))
+        
+        # Time filter
+        time_frame = ttk.Frame(filter_frame)
+        time_frame.pack(side="left", fill="x", expand=True)
+        
+        ttk.Label(time_frame, text="Von:").pack(side="left", padx=(0, 5))
+        self.time_start = ttk.Entry(time_frame, width=20)
+        self.time_start.pack(side="left", padx=(0, 10))
+        self.time_start.insert(0, "YYYY-MM-DD HH:MM:SS")
+        self.time_start.bind("<FocusIn>", lambda e: self.time_start.delete(0, tk.END) if self.time_start.get().startswith("YYYY") else None)
+        
+        ttk.Label(time_frame, text="Bis:").pack(side="left", padx=(0, 5))
+        self.time_end = ttk.Entry(time_frame, width=20)
+        self.time_end.pack(side="left", padx=(0, 10))
+        self.time_end.insert(0, "YYYY-MM-DD HH:MM:SS")
+        self.time_end.bind("<FocusIn>", lambda e: self.time_end.delete(0, tk.END) if self.time_end.get().startswith("YYYY") else None)
+        
+        # User filter
+        user_frame = ttk.Frame(filter_frame)
+        user_frame.pack(side="left", padx=(20, 0))
+        
+        ttk.Label(user_frame, text="User:").pack(side="left", padx=(0, 5))
+        self.user_filter = ttk.Combobox(user_frame, width=20, state="readonly")
+        self.user_filter.pack(side="left", padx=(0, 10))
+        self.user_filter['values'] = ['Alle']
+        self.user_filter.current(0)
+        
+        # Filter buttons
+        ttk.Button(filter_frame, text="✓ Filter anwenden", command=self.apply_filters).pack(side="left", padx=5)
+        ttk.Button(filter_frame, text="✗ Filter zurücksetzen", command=self.reset_filters).pack(side="left")
+        
         # Progress bar
         self.progress = ttk.Progressbar(self, orient="horizontal", mode="determinate")
         self.progress.pack(fill="x", padx=10, pady=5)
@@ -198,6 +232,69 @@ class LogAnalyzerApp(TkinterDnD.Tk if HAS_DND else tk.Tk):
                 messagebox.showwarning("Warnung", "Zwischenablage ist leer")
         except tk.TclError:
             messagebox.showerror("Fehler", "Kein Text in Zwischenablage")
+    
+    def apply_filters(self):
+        """Apply time and user filters to displayed data."""
+        try:
+            # Parse time filters
+            start_time = None
+            end_time = None
+            
+            start_str = self.time_start.get()
+            if start_str and not start_str.startswith("YYYY"):
+                from datetime import datetime
+                try:
+                    start_time = datetime.strptime(start_str, "%Y-%m-%d %H:%M:%S")
+                except ValueError:
+                    messagebox.showerror("Fehler", "Ungültiges Startdatum! Format: YYYY-MM-DD HH:MM:SS")
+                    return
+            
+            end_str = self.time_end.get()
+            if end_str and not end_str.startswith("YYYY"):
+                from datetime import datetime
+                try:
+                    end_time = datetime.strptime(end_str, "%Y-%m-%d %H:%M:%S")
+                except ValueError:
+                    messagebox.showerror("Fehler", "Ungültiges Enddatum! Format: YYYY-MM-DD HH:MM:SS")
+                    return
+            
+            # Apply filters to data store
+            self.data_store.set_time_filter(start_time, end_time)
+            
+            # User filter
+            user = self.user_filter.get()
+            if user and user != "Alle":
+                self.data_store.set_user_filter(user)
+            else:
+                self.data_store.set_user_filter(None)
+            
+            # Refresh display
+            self._finalize_analysis()
+            messagebox.showinfo("Filter", "Filter angewendet!")
+            
+        except Exception as e:
+            logger.exception("Filter application failed")
+            messagebox.showerror("Fehler", f"Fehler beim Anwenden der Filter: {e}")
+    
+    def reset_filters(self):
+        """Reset all filters and refresh display."""
+        self.data_store.clear_filters()
+        self.time_start.delete(0, tk.END)
+        self.time_start.insert(0, "YYYY-MM-DD HH:MM:SS")
+        self.time_end.delete(0, tk.END)
+        self.time_end.insert(0, "YYYY-MM-DD HH:MM:SS")
+        self.user_filter.current(0)
+        self._finalize_analysis()
+        messagebox.showinfo("Filter", "Filter zurückgesetzt!")
+    
+    def update_user_filter_list(self):
+        """Update user filter dropdown with users from loaded logs."""
+        users = self.data_store.get_users()
+        if users:
+            self.user_filter['values'] = ['Alle'] + users
+        else:
+            self.user_filter['values'] = ['Alle']
+        self.user_filter.current(0)
     
     def start_analysis(self, source, is_file: bool):
         """
@@ -409,6 +506,9 @@ class LogAnalyzerApp(TkinterDnD.Tk if HAS_DND else tk.Tk):
     def _finalize_analysis(self):
         """Show summary after all files are processed."""
         self.summary_text.delete(1.0, tk.END)
+        
+        # Update user filter list
+        self.update_user_filter_list()
         
         # Show file summary if multiple files
         if self.total_files > 1:

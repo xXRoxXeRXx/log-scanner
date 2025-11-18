@@ -233,6 +233,106 @@ class TestGzipSupport(unittest.TestCase):
         self.assertEqual(store.get_count("php_errors"), 1)
 
 
+class TestFilters(unittest.TestCase):
+    """Test time and user filters"""
+    
+    def setUp(self):
+        """Create test data store with sample data"""
+        from datetime import datetime
+        self.store = LogDataStore()
+        
+        # Add test entries with different times and users
+        self.store.add_entry("s3_errors", {
+            "time": "2025-11-18T10:00:00",
+            "type": "HTTP 404",
+            "msg": "File not found",
+            "user": "alice"
+        })
+        
+        self.store.add_entry("s3_errors", {
+            "time": "2025-11-18T12:00:00",
+            "type": "HTTP 500",
+            "msg": "Server error",
+            "user": "bob"
+        })
+        
+        self.store.add_entry("s3_errors", {
+            "time": "2025-11-18T14:00:00",
+            "type": "HTTP 403",
+            "msg": "Forbidden",
+            "user": "alice"
+        })
+    
+    def test_no_filter(self):
+        """Test getting entries without filters"""
+        entries = self.store.get_entries("s3_errors")
+        self.assertEqual(len(entries), 3)
+    
+    def test_time_filter_start(self):
+        """Test filtering by start time"""
+        from datetime import datetime
+        start = datetime(2025, 11, 18, 11, 0, 0)
+        self.store.set_time_filter(start, None)
+        
+        entries = self.store.get_entries("s3_errors")
+        self.assertEqual(len(entries), 2)  # 12:00 and 14:00
+    
+    def test_time_filter_end(self):
+        """Test filtering by end time"""
+        from datetime import datetime
+        end = datetime(2025, 11, 18, 13, 0, 0)
+        self.store.set_time_filter(None, end)
+        
+        entries = self.store.get_entries("s3_errors")
+        self.assertEqual(len(entries), 2)  # 10:00 and 12:00
+    
+    def test_time_filter_range(self):
+        """Test filtering by time range"""
+        from datetime import datetime
+        start = datetime(2025, 11, 18, 11, 0, 0)
+        end = datetime(2025, 11, 18, 13, 0, 0)
+        self.store.set_time_filter(start, end)
+        
+        entries = self.store.get_entries("s3_errors")
+        self.assertEqual(len(entries), 1)  # Only 12:00
+        self.assertEqual(entries[0]["user"], "bob")
+    
+    def test_user_filter(self):
+        """Test filtering by user"""
+        self.store.set_user_filter("alice")
+        
+        entries = self.store.get_entries("s3_errors")
+        self.assertEqual(len(entries), 2)  # alice has 2 entries
+        self.assertTrue(all(e["user"] == "alice" for e in entries))
+    
+    def test_combined_filters(self):
+        """Test combining time and user filters"""
+        from datetime import datetime
+        start = datetime(2025, 11, 18, 11, 0, 0)
+        self.store.set_time_filter(start, None)
+        self.store.set_user_filter("alice")
+        
+        entries = self.store.get_entries("s3_errors")
+        self.assertEqual(len(entries), 1)  # Only alice at 14:00
+        self.assertEqual(entries[0]["time"], "2025-11-18T14:00:00")
+    
+    def test_clear_filters(self):
+        """Test clearing all filters"""
+        from datetime import datetime
+        self.store.set_time_filter(datetime(2025, 11, 18, 11, 0, 0), None)
+        self.store.set_user_filter("alice")
+        self.store.clear_filters()
+        
+        entries = self.store.get_entries("s3_errors")
+        self.assertEqual(len(entries), 3)  # All entries visible again
+    
+    def test_get_users(self):
+        """Test extracting unique users"""
+        users = self.store.get_users()
+        self.assertEqual(set(users), {"alice", "bob"})
+        self.assertEqual(len(users), 2)
+
+
 def run_tests():
     """Run all tests"""
     unittest.main(verbosity=2)
@@ -240,3 +340,4 @@ def run_tests():
 
 if __name__ == "__main__":
     run_tests()
+

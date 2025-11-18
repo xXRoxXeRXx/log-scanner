@@ -68,6 +68,7 @@ class ServerLogParser:
         level = data.get('level')
         app = data.get('app', '')
         timestamp = data.get('time', '')
+        user = data.get('user', '')  # Extract user
         
         # Extract OID or filename for display
         oid = self._extract_oid(msg)
@@ -78,7 +79,8 @@ class ServerLogParser:
             return self.data_store.add_entry("s3_errors", {
                 "time": timestamp,
                 "type": f"HTTP {http_code}",
-                "msg": oid or msg[:100]
+                "msg": oid or msg[:100],
+                "user": user
             })
         
         # Priority 2: DAV Errors
@@ -86,7 +88,8 @@ class ServerLogParser:
             return self.data_store.add_entry("dav_errors", {
                 "time": timestamp,
                 "type": "WebDAV Error",
-                "msg": msg[:100]
+                "msg": msg[:100],
+                "user": user
             })
         
         # Priority 3: Objectstore Errors
@@ -94,7 +97,8 @@ class ServerLogParser:
             return self.data_store.add_entry("objectstore_errors", {
                 "time": timestamp,
                 "type": "Objectstore",
-                "msg": msg[:100]
+                "msg": msg[:100],
+                "user": user
             })
         
         # Priority 4: PHP Errors
@@ -102,7 +106,8 @@ class ServerLogParser:
             return self.data_store.add_entry("php_errors", {
                 "time": timestamp,
                 "type": "PHP Error",
-                "msg": msg[:100]
+                "msg": msg[:100],
+                "user": user
             })
         
         # Priority 5: Other Errors (level 3)
@@ -110,7 +115,8 @@ class ServerLogParser:
             return self.data_store.add_entry("other_errors", {
                 "time": timestamp,
                 "type": "Error",
-                "msg": msg[:100]
+                "msg": msg[:100],
+                "user": user
             })
         
         # Priority 6: Warnings (level 2)
@@ -118,7 +124,8 @@ class ServerLogParser:
             return self.data_store.add_entry("server_warnings", {
                 "time": timestamp,
                 "type": app or "Warning",
-                "msg": msg[:100]
+                "msg": msg[:100],
+                "user": user
             })
         
         # Priority 7: Info (level 1)
@@ -126,7 +133,8 @@ class ServerLogParser:
             return self.data_store.add_entry("server_info", {
                 "time": timestamp,
                 "type": app or "Info",
-                "msg": msg[:100]
+                "msg": msg[:100],
+                "user": user
             })
         
         # Priority 8: Debug (level 0)
@@ -134,7 +142,8 @@ class ServerLogParser:
             return self.data_store.add_entry("server_debug", {
                 "time": timestamp,
                 "type": app or "Debug",
-                "msg": msg[:100]
+                "msg": msg[:100],
+                "user": user
             })
         
         return False

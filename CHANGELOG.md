@@ -5,6 +5,66 @@ All notable changes to the Nextcloud Log Analyzer will be documented in this fil
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [17.2.0] - 2025-11-18
+
+### 🔍 Filter & Search Support
+
+Major support-focused enhancement adding powerful filtering capabilities.
+
+### Added
+- **Time Range Filter** ⏰
+  - Filter logs by start and end datetime
+  - Format: YYYY-MM-DD HH:MM:SS
+  - "Von" (From) and "Bis" (To) input fields
+  - Supports partial filters (only start or only end)
+  - Works with both server (ISO) and client (custom) timestamps
+  
+- **User Filter** 👤
+  - Filter logs by specific Nextcloud user
+  - Dropdown populated with all users found in logs
+  - "Alle" option to show all users
+  - Automatically extracts users from server logs
+  
+- **Filter UI** 🎨
+  - New "🔍 Filter" section in main window
+  - "✓ Filter anwenden" button to apply filters
+  - "✗ Filter zurücksetzen" button to clear filters
+  - Real-time user list updates after analysis
+  
+- **Filter Logic** 🧠
+  - `set_time_filter()` and `set_user_filter()` in LogDataStore
+  - `_matches_filters()` for entry validation
+  - `_parse_timestamp()` supports multiple date formats
+  - Filters apply to all categories simultaneously
+  - `get_users()` returns sorted list of unique users
+  
+- **Enhanced Tests** 🧪
+  - New `TestFilters` test class with 8 comprehensive tests
+  - Test time filtering (start, end, range)
+  - Test user filtering
+  - Test combined filters
+  - Test filter clearing
+  - All 26 tests passing (18 → 26)
+
+### Changed
+- **LogDataStore**: Modified `get_entries()` and `get_count()` to respect filters
+- **ServerLogParser**: All entries now include "user" field
+- **Summary Display**: Automatically updates user dropdown after analysis
+- **Window Height**: Adjusted to accommodate filter section
+
+### Technical Details
+- Filters implemented at data store level for consistency
+- Thread-safe filter operations with Lock
+- No performance impact - filters applied at retrieval time
+- User tracking via set (O(1) lookups)
+- Multiple timestamp format support
+
+### Use Cases (Support Scenarios)
+- "Show me only errors from user 'max.mustermann'"
+- "What happened between 10:00 and 11:00?"
+- "Filter out all other users to focus on one customer"
+- "Find issues during specific time window"
+
 ## [17.1.0] - 2025-11-18
 
 ### 🚀 Multi-File & Compression Support

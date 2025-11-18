@@ -1,4 +1,4 @@
-# 🔍 Nextcloud Log Analyzer v17.1
+# 🔍 Nextcloud Log Analyzer v17.2
 
 Eine professionelle Desktop-Anwendung zur Analyse von Nextcloud Server- und Client-Logs mit grafischer Benutzeroberfläche.
 
@@ -8,6 +8,7 @@ Eine professionelle Desktop-Anwendung zur Analyse von Nextcloud Server- und Clie
 - 📊 **Dual-Format-Support**: Analysiert JSON (Server) und Text (Client) Logs
 - 🗜️ **Kompression**: Direkte Verarbeitung von `.gz` / `.gzip` Dateien
 - 📁 **Multi-File**: Mehrere Log-Dateien gleichzeitig analysieren
+- 🔍 **Filter**: Zeit- und User-basierte Filterung für präzise Analysen
 - 🎯 **Intelligente Kategorisierung**: Automatische Fehlerklassifizierung (S3, DAV, PHP, etc.)
 - 📖 **Client Story Mode**: Chronologischer Sync-Verlauf mit Ereignissen
 - 🚀 **High Performance**: Threading für große Dateien (>10 MB)
@@ -165,6 +166,51 @@ ENABLE_EXCEL_EXPORT = True
 ENABLE_CLIPBOARD_IMPORT = True
 ENABLE_DRAG_DROP = True
 ```
+
+## 🔍 Filter verwenden
+
+Die App bietet leistungsstarke Filter für Support-Szenarien:
+
+### Zeitfilter ⏰
+
+**Format:** `YYYY-MM-DD HH:MM:SS`
+
+**Beispiele:**
+```
+Von: 2025-11-18 10:00:00
+Bis: 2025-11-18 12:00:00
+→ Zeigt nur Logs zwischen 10 und 12 Uhr
+```
+
+**Teilfilter:**
+- Nur "Von" ausfüllen → Zeigt alles ab diesem Zeitpunkt
+- Nur "Bis" ausfüllen → Zeigt alles bis zu diesem Zeitpunkt
+
+### User-Filter 👤
+
+**Dropdown** wird automatisch mit allen gefundenen Usern gefüllt nach der Analyse.
+
+**Beispiele:**
+- User: `max.mustermann` → Zeigt nur Fehler dieses Users
+- User: `Alle` → Zeigt alle User (Standard)
+
+### Kombinierte Filter 🎯
+
+**Leistungsstark:** Zeit + User gleichzeitig!
+
+**Support-Szenario:**
+```
+User meldet: "Ich konnte zwischen 10 und 11 Uhr nicht syncen"
+→ Von: 2025-11-18 10:00:00
+→ Bis: 2025-11-18 11:00:00
+→ User: max.mustermann
+→ Filter anwenden
+→ Zeigt nur seine Fehler in diesem Zeitfenster!
+```
+
+### Filter zurücksetzen
+
+Button "✗ Filter zurücksetzen" entfernt alle Filter und zeigt wieder alle Logs.
 
 ## 🧪 Testing
 
