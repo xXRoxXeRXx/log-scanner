@@ -5,6 +5,7 @@ Main application with GUI
 import tkinter as tk
 from tkinter import ttk, filedialog, scrolledtext, messagebox
 import os
+import sys
 import time
 import re
 import threading
@@ -13,12 +14,16 @@ import json
 from pathlib import Path
 from typing import Optional, List
 from enum import Enum
+from datetime import datetime
 
 # Local imports
 from config import *
 from data_store import LogDataStore
 from server_parser import ServerLogParser
 from client_parser import ClientLogParser
+
+# Platform detection
+IS_MACOS = sys.platform == 'darwin'
 
 # Optional dependencies
 try:
@@ -35,12 +40,16 @@ except ImportError:
     HAS_OPENPYXL = False
     logging.warning("openpyxl not installed - Excel export unavailable")
 
-try:
-    from tkcalendar import DateEntry
-    HAS_TKCALENDAR = True
-except ImportError:
-    HAS_TKCALENDAR = False
-    logging.warning("tkcalendar not installed - using text entry for dates")
+# tkcalendar has issues on macOS - disable there
+HAS_TKCALENDAR = False
+if not IS_MACOS:
+    try:
+        from tkcalendar import DateEntry
+        HAS_TKCALENDAR = True
+    except ImportError:
+        logging.warning("tkcalendar not installed - using text entry for dates")
+else:
+    logging.info("macOS detected - using native date entry instead of tkcalendar")
 
 # Setup logging
 logger = setup_logging()
@@ -153,10 +162,14 @@ class LogAnalyzerApp(TkinterDnD.Tk if HAS_DND else tk.Tk):
             self.time_start_time.insert(0, "HH:MM")
             self.time_start_time.bind("<FocusIn>", lambda e: self.time_start_time.delete(0, tk.END) if self.time_start_time.get() == "HH:MM" else None)
         else:
+            # macOS-compatible date picker with separate day/month/year fields
             self.time_start = ttk.Entry(time_frame, width=20)
             self.time_start.pack(side="left", padx=(0, 10))
-            self.time_start.insert(0, "YYYY-MM-DD HH:MM:SS")
-            self.time_start.bind("<FocusIn>", lambda e: self.time_start.delete(0, tk.END) if self.time_start.get().startswith("YYYY") else None)
+            # Set today's date in YYYY-MM-DD format
+            today = datetime.now().strftime("%Y-%m-%d")
+            self.time_start.insert(0, today)
+            # Add tooltip-style help
+            ttk.Label(time_frame, text="(YYYY-MM-DD HH:MM)", font=('default', 8), foreground='gray').pack(side="left", padx=(0, 10))
             self.time_start_time = None
         
         ttk.Label(time_frame, text="Bis:").pack(side="left", padx=(0, 5))
@@ -177,10 +190,13 @@ class LogAnalyzerApp(TkinterDnD.Tk if HAS_DND else tk.Tk):
             self.time_end_time.insert(0, "HH:MM")
             self.time_end_time.bind("<FocusIn>", lambda e: self.time_end_time.delete(0, tk.END) if self.time_end_time.get() == "HH:MM" else None)
         else:
+            # macOS-compatible date picker
             self.time_end = ttk.Entry(time_frame, width=20)
             self.time_end.pack(side="left", padx=(0, 10))
-            self.time_end.insert(0, "YYYY-MM-DD HH:MM:SS")
-            self.time_end.bind("<FocusIn>", lambda e: self.time_end.delete(0, tk.END) if self.time_end.get().startswith("YYYY") else None)
+            # Set today's date + time
+            today = datetime.now().strftime("%Y-%m-%d 23:59")
+            self.time_end.insert(0, today)
+            ttk.Label(time_frame, text="(YYYY-MM-DD HH:MM)", font=('default', 8), foreground='gray').pack(side="left", padx=(0, 10))
             self.time_end_time = None
         
         # User filter

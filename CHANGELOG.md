@@ -5,6 +5,63 @@ All notable changes to the Nextcloud Log Analyzer will be documented in this fil
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [17.9.1] - 2025-11-18
+
+### 🍎 macOS Compatibility Fix
+
+#### Problem
+- `tkcalendar.DateEntry` does not work properly on macOS
+- Calendar popup would not appear or crash on macOS systems
+- Users on Mac could not use the date filter feature
+
+#### Solution
+- **Platform detection**: Automatically detect macOS (`sys.platform == 'darwin'`)
+- **Disable tkcalendar on macOS**: Set `HAS_TKCALENDAR = False` for macOS
+- **Enhanced fallback date picker**: Native text entry with better UX
+  - Pre-filled with today's date in `YYYY-MM-DD` format
+  - Clear format hints: `(YYYY-MM-DD HH:MM)`
+  - No confusing placeholder text
+
+#### Changes
+
+**Before** (macOS):
+```
+Von: [DateEntry popup - broken] ❌
+```
+
+**After** (macOS):
+```
+Von: [2025-11-18] (YYYY-MM-DD HH:MM) ✅
+Bis: [2025-11-18 23:59] (YYYY-MM-DD HH:MM) ✅
+```
+
+#### Benefits
+- ✅ **Works natively on macOS** without external calendar widget
+- ✅ **Pre-filled with sensible defaults** (today's date)
+- ✅ **Clear format documentation** visible next to input
+- ✅ **Consistent behavior** across all platforms
+- ✅ **No crashes or UI glitches**
+
+#### Technical Details
+- Added `import sys` for platform detection
+- Added `IS_MACOS = sys.platform == 'darwin'`
+- Conditional tkcalendar import: `if not IS_MACOS`
+- Enhanced fallback with `datetime.now()` for default values
+- Added format hint labels in gray color
+
+#### Platform Support
+| Platform | Date Picker | Status |
+|----------|-------------|--------|
+| Windows | tkcalendar DateEntry | ✅ Working |
+| Linux | tkcalendar DateEntry | ✅ Working |
+| macOS | Native text entry | ✅ Fixed |
+
+### Files Changed
+- `log_analyzer_v17.py`: Platform detection, conditional tkcalendar, enhanced fallback
+- `config.py`: Version bump to 17.9.1
+
+---
+
 ## [17.9.0] - 2025-11-18
 
 ### ✨ Major Improvement: Intelligent Error Deduplication
