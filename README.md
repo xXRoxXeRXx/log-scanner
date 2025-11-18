@@ -1,4 +1,4 @@
-# 🔍 Nextcloud Log Analyzer v17.2
+# 🔍 Nextcloud Log Analyzer v17.4
 
 Eine professionelle Desktop-Anwendung zur Analyse von Nextcloud Server- und Client-Logs mit grafischer Benutzeroberfläche.
 
@@ -9,7 +9,9 @@ Eine professionelle Desktop-Anwendung zur Analyse von Nextcloud Server- und Clie
 - 🗜️ **Kompression**: Direkte Verarbeitung von `.gz` / `.gzip` Dateien
 - 📁 **Multi-File**: Mehrere Log-Dateien gleichzeitig analysieren
 - 🔍 **Filter**: Zeit- und User-basierte Filterung für präzise Analysen
-- 🎯 **Intelligente Kategorisierung**: Automatische Fehlerklassifizierung (S3, DAV, PHP, etc.)
+- �️ **Error Codes**: Dedizierte Spalte für HTTP-Codes, Custom-Codes und Exception-Codes
+- 🗓️ **DatePicker**: Visueller Kalender für einfache Datumsauswahl
+- �🎯 **Intelligente Kategorisierung**: Automatische Fehlerklassifizierung (S3, DAV, PHP, etc.)
 - 📖 **Client Story Mode**: Chronologischer Sync-Verlauf mit Ereignissen
 - 🚀 **High Performance**: Threading für große Dateien (>10 MB)
 - 💾 **Memory-Safe**: Konfigurierbare Speicher-Limits (Standard: 10.000 Einträge/Kategorie)
@@ -18,7 +20,7 @@ Eine professionelle Desktop-Anwendung zur Analyse von Nextcloud Server- und Clie
 ### Erweiterte Features
 - 🖱️ **Drag & Drop**: Dateien (auch mehrere) einfach in die Anwendung ziehen
 - 📋 **Clipboard-Support**: Logs direkt aus der Zwischenablage analysieren
-- 📥 **Export**: Markdown-Tabellen & Excel-Export
+- 📥 **Export**: Markdown-Tabellen & Excel-Export (inkl. Error Codes)
 - ⚙️ **Konfigurierbar**: Alle Limits und Einstellungen anpassbar
 - 📝 **Professionelles Logging**: Detaillierte Log-Dateien für Debugging
 
@@ -28,12 +30,14 @@ Eine professionelle Desktop-Anwendung zur Analyse von Nextcloud Server- und Clie
 
 ```
 log-scanner/
-├── log_scanner.py      # Haupt-GUI-Anwendung
+├── log_analyzer_v17.py # Haupt-GUI-Anwendung
+├── log_scanner.py      # Convenience Wrapper
 ├── config.py           # Zentrale Konfiguration
 ├── data_store.py       # Thread-sichere Datenverwaltung
 ├── server_parser.py    # JSON Server-Log Parser
 ├── client_parser.py    # Text Client-Log Parser
 ├── test_analyzer.py    # Unit Tests
+├── test_error_codes.py # Error Code Tests
 └── requirements.txt    # Dependencies
 ```
 
@@ -52,31 +56,54 @@ log-scanner/
 
 ### Schnellinstallation
 
-```powershell
+```bash
 # 1. Repository klonen
 git clone https://github.com/xXRoxXeRXx/log-scanner.git
 cd log-scanner
 
-# 2. Dependencies installieren
+# 2. Dependencies installieren (optional, aber empfohlen)
 pip install -r requirements.txt
 
 # 3. Anwendung starten
 python log_scanner.py
 ```
 
+**Hinweis:** Falls `tkinter` fehlt (meist nur Linux):
+```bash
+# Ubuntu/Debian
+sudo apt-get install python3-tk
+
+# Fedora/RHEL
+sudo dnf install python3-tkinter
+
+# macOS (mit Homebrew Python)
+brew install python-tk
+```
+
 ### Dependencies
 
 #### Pflicht
-- `tkinter` (normalerweise in Python enthalten)
+- **Python 3.8+** mit `tkinter` (normalerweise enthalten)
+  - Windows/macOS: Bereits mit Python installiert
+  - Linux: Siehe Installation oben
 
 #### Optional (empfohlen)
-- `tkinterdnd2` - Drag & Drop Funktionalität
-- `openpyxl` - Excel Export
-- `tkcalendar` - Visueller Datepicker für Zeitfilter 📅
+- `tkinterdnd2>=0.3.0` - Drag & Drop Funktionalität 🖱️
+- `openpyxl>=3.0.0` - Excel Export 📊
+- `tkcalendar>=1.6.0` - Visueller Datepicker für Zeitfilter 📅
 
-```powershell
+**Installation der optionalen Pakete:**
+```bash
+pip install -r requirements.txt
+# oder einzeln:
 pip install tkinterdnd2 openpyxl tkcalendar
 ```
+
+**Ohne optionale Pakete:**
+Die App funktioniert auch ohne diese - Features sind dann deaktiviert:
+- Ohne `tkinterdnd2`: Kein Drag & Drop (Datei-Button funktioniert)
+- Ohne `openpyxl`: Kein Excel-Export (Markdown-Export funktioniert)
+- Ohne `tkcalendar`: Text-Datumseingabe statt Kalender-Widget
 
 ## 🚀 Verwendung
 
@@ -84,8 +111,13 @@ pip install tkinterdnd2 openpyxl tkcalendar
 
 1. **Anwendung starten**
    ```powershell
+   # Empfohlen - Einfacher Startbefehl
+   python log_scanner.py
+   
+   # Oder direkt die Hauptdatei
    python log_analyzer_v17.py
-   # oder mit Batch-Datei:
+   
+   # Oder mit Batch-Datei (Windows)
    start_v17.bat
    ```
 
@@ -226,14 +258,66 @@ User meldet: "Ich konnte zwischen 10 und 11 Uhr nicht syncen"
 
 Button "✗ Filter zurücksetzen" entfernt alle Filter und zeigt wieder alle Logs.
 
+## 🏷️ Error Code Spalte
+
+Die Anwendung extrahiert automatisch **Error Codes** aus verschiedenen Quellen und zeigt sie in einer eigenen Spalte an.
+
+### Unterstützte Error Code Typen
+
+#### HTTP Status Codes
+- `401` - Unauthorized (Authentifizierungsfehler)
+- `403` - Forbidden (Zugriff verweigert)
+- `404` - Not Found (Ressource nicht gefunden)
+- `500` - Internal Server Error
+- `504` - Gateway Timeout
+
+#### Custom Error Codes
+- `paas-auth-1` - IONOS OpenAI Auth-Fehler
+- `http_504_timeout` - Spezifischer Timeout-Code
+- Weitere app-spezifische Codes
+
+#### Exception Codes
+- Numerische Codes aus `exception.Code` Feldern
+- Datenbank-Fehlercodes (z.B. `1045` - Access denied)
+
+#### Client Network Errors
+- `NET_5` - QNetworkReply::NetworkError(5)
+- Format: `NET_` + Error-Nummer
+
+### Verwendung
+
+**Detail-Ansichten:** Alle Fehler-Listen zeigen eine "Error Code" Spalte:
+```
+| Zeit               | Typ          | Error Code  | Nachricht          |
+|--------------------|--------------|-------------|--------------------|
+| 2025-10-02 13:07   | integration  | 401         | API request error  |
+| 2025-10-02 13:11   | core         | -           | Session HMAC error |
+```
+
+**Export:** Error Codes werden automatisch in Markdown und Excel mit exportiert.
+
+**Vorteile:**
+- ✅ Schnelle Identifikation spezifischer Fehlertypen
+- ✅ Gruppierung von Fehlern nach Code
+- ✅ Bessere Kommunikation mit Support/Dev-Teams
+- ✅ Einfachere Fehlerkorrelation
+
+**Beispiel:** User meldet "API funktioniert nicht"
+- Öffne Details → Sortiere nach Error Code
+- Alle `401` Codes sichtbar → Auth-Problem identifiziert! 🎯
+
 ## 🧪 Testing
 
 ```powershell
 # Unit Tests ausführen
 python test_analyzer.py
 
-# Mit pytest (wenn installiert)
-pytest test_analyzer.py -v
+# Error Code Tests
+python test_error_codes.py
+
+# Alle Tests mit pytest (wenn installiert)
+pytest test_analyzer.py test_error_codes.py -v
+```
 ```
 
 ### Test Coverage
