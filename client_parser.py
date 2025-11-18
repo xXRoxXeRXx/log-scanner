@@ -1,0 +1,162 @@
+"""
+Client log parser for text-formatted Nextcloud client logs
+"""
+from typing import Dict, List, Tuple, Pattern, Optional
+import re
+import logging
+from data_store import LogDataStore
+
+logger = logging.getLogger(__name__)
+
+
+class ClientLogParser:
+    """
+    Parser for Nextcloud client logs in text format.
+    
+    Extracts sync events, errors, and builds a "story" of client activities.
+    """
+    
+    def __init__(self, data_store: LogDataStore):
+        """
+        Initialize client log parser.
+        
+        Args:
+            data_store: LogDataStore instance for storing parsed entries
+        """
+        self.data_store = data_store
+        
+        # Main log line pattern: 2025-11-11 12:34:56:789 [ level component ]: message
+        self.log_line_regex: Pattern = re.compile(
+            r'^([\d\-]+ [\d:]+:\d{3})\s+\[\s*(\w+)\s+([\w\d\._\-]+).*?\]:\s+(.*)$'
+        )
+        
+        # Story patterns: (regex, event_name)
+        self.story_patterns: List[Tuple[Pattern, str]] = [
+            (re.compile(r'>========== Sync started for folder \[(.*?)\]'), "Sync gestartet"),
+            (re.compile(r'<========== Sync finished for folder \[(.*?)\]'), "Sync beendet"),
+            (re.compile(r'Chunked upload of (\d+) bytes took (\d+)'), "Upload Fortschritt"),
+            (re.compile(r'Compare etag .* -> CHANGED'), "Server-Änderung erkannt (ETag)"),
+            (re.compile(r'Opening file details view in tray for\s+"?(.*?)"?$'), "Benutzer: Datei-Details geöffnet"),
+            (re.compile(r'Error transferring (.*?) - server replied: (.*)'), "Übertragungsfehler"),
+            (re.compile(r'Network request error'), "Netzwerkfehler"),
+            (re.compile(r'discovered "(.*?)" .* OCC::SyncFileItem::Up'), "Datei zum Upload gefunden"),
+            (re.compile(r'discovered "(.*?)" .* OCC::SyncFileItem::Down'), "Datei zum Download gefunden"),
+            (re.compile(r'DELETE .* FINISHED WITH STATUS "OK"'), "Löschen erfolgreich")
+        ]
+        
+        logger.info("ClientLogParser initialized")
+    
+    def parse_line(self, line: str) -> bool:
+        """
+        Parse a single text log line.
+        
+        Args:
+            line: Raw log line string
+            
+        Returns:
+            True if successfully parsed, False otherwise
+        """
+        match = self.log_line_regex.match(line)
+        if not match:
+            return False
+        
+        try:
+            timestamp, level_str, component, message = match.groups()
+            
+            # Check for errors/warnings
+            if self._is_error_level(level_str, message):
+                self._store_error(timestamp, message)
+            
+            # Check for story events
+            self._check_story_patterns(timestamp, message)
+            
+            return True
+            
+        except Exception as e:
+            logger.error(f"Error parsing client log line: {e}")
+            return False
+    
+    def _is_error_level(self, level: str, message: str) -> bool:
+        """
+        Check if log entry is an error or warning.
+        
+        Args:
+            level: Log level string (info, warning, error, etc.)
+            message: Log message
+            
+        Returns:
+            True if error/warning level
+        """
+        return (
+            level.lower() in ['warning', 'error', 'fatal', 'critical'] or
+            "Network request error" in message or
+            "Error transferring" in message
+        )
+    
+    def _store_error(self, timestamp: str, message: str) -> None:
+        """
+        Store error entry in data store.
+        
+        Args:
+            timestamp: Log timestamp
+            message: Error message
+        """
+        self.data_store.add_entry("client_errors", {
+            "time": timestamp,
+            "type": "Client Error",
+            "msg": message
+        })
+    
+    def _check_story_patterns(self, timestamp: str, message: str) -> None:
+        """
+        Check message against story patterns and store matches.
+        
+        Args:
+            timestamp: Log timestamp
+            message: Log message
+        """
+        for pattern, event_name in self.story_patterns:
+            match = pattern.search(message)
+            if match:
+                details = self._extract_event_details(match, event_name, message)
+                self.data_store.add_entry("client_events", {
+                    "time": timestamp,
+                    "type": event_name,
+                    "msg": details
+                })
+                break  # Only match first pattern
+    
+    def _extract_event_details(
+        self, 
+        match: re.Match, 
+        event_name: str, 
+        full_message: str
+    ) -> str:
+        """
+        Extract detailed information from pattern match.
+        
+        Args:
+            match: Regex match object
+            event_name: Name of the event
+            full_message: Complete log message
+            
+        Returns:
+            Formatted event details
+        """
+        # Special handling for upload progress
+        if "Upload Fortschritt" in event_name and match.lastindex and match.lastindex >= 2:
+            bytes_str = match.group(1)
+            ms_str = match.group(2)
+            try:
+                mb = int(bytes_str) / (1024 * 1024)
+                seconds = int(ms_str) / 1000
+                return f"{mb:.2f} MB in {seconds:.1f}s"
+            except (ValueError, ZeroDivisionError):
+                return full_message
+        
+        # Extract first capture group if available
+        if match.lastindex and match.lastindex >= 1:
+            return match.group(1)
+        
+        # Return full message as fallback
+        return full_message

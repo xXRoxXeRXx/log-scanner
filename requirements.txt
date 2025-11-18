@@ -1,0 +1,16 @@
+# Nextcloud Log Analyzer Requirements
+
+# Core dependencies
+tkinter  # Usually included with Python
+
+# Optional but recommended
+tkinterdnd2>=0.3.0  # For drag & drop support
+openpyxl>=3.0.0     # For Excel export
+
+# Development dependencies
+# (uncomment for development)
+# pytest>=7.0.0
+# pytest-cov>=4.0.0
+# black>=22.0.0
+# flake8>=6.0.0
+# mypy>=1.0.0
