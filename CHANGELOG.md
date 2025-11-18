@@ -5,6 +5,49 @@ All notable changes to the Nextcloud Log Analyzer will be documented in this fil
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [17.4.0] - 2025-11-18
+
+### 🏷️ Error Code Column
+
+Added dedicated error code column for better error analysis and troubleshooting.
+
+### Added
+- **Error Code Column** 🏷️
+  - New "Error Code" column in all log detail views
+  - Displays extracted error codes from logs (HTTP codes, custom codes, etc.)
+  - Shows "-" for entries without error code
+  - Included in Excel/Markdown exports
+
+- **Smart Error Code Extraction** 🔍
+  - HTTP status codes: `401`, `403`, `404`, `500`, `504`, etc.
+  - Custom error codes: `paas-auth-1`, `http_504_timeout`, etc.
+  - Exception codes from `exception.Code` field
+  - QNetworkReply errors from client logs (e.g., `NET_5`)
+  - Embedded errorCode from JSON messages
+
+### Changed
+- Detail windows now 1200px wide (was 1000px) to accommodate error code column
+- Export functions include error_code field
+- Markdown table now has 4 columns (Zeit | Typ | Error Code | Nachricht)
+- Excel export includes Error Code column
+
+### Technical Details
+- `ServerLogParser._extract_error_code()`: Extracts codes from multiple sources
+- `ClientLogParser._extract_error_code()`: Client-specific error extraction
+- Multiple regex patterns for different error code formats
+- All log entries now include `error_code` field (optional)
+
+### Testing
+- Added `test_error_codes.py` with 10 unit tests
+- Tests cover HTTP codes, custom codes, exception codes, client errors
+- All 36 tests passing (26 existing + 10 new)
+
+### Use Cases
+- Quickly identify specific error types (e.g., all 401 auth errors)
+- Group errors by code for statistics
+- Better error reporting to support/dev teams
+- Easier correlation of related errors
+
 ## [17.3.0] - 2025-11-18
 
 ### 🗓️ DatePicker Enhancement

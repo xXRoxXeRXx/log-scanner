@@ -70,6 +70,9 @@ class ServerLogParser:
         timestamp = data.get('time', '')
         user = data.get('user', '')  # Extract user
         
+        # Extract error code from various sources
+        error_code = self._extract_error_code(data, msg)
+        
         # Extract OID or filename for display
         oid = self._extract_oid(msg)
         
@@ -80,7 +83,8 @@ class ServerLogParser:
                 "time": timestamp,
                 "type": f"HTTP {http_code}",
                 "msg": oid or msg[:100],
-                "user": user
+                "user": user,
+                "error_code": error_code or http_code
             })
         
         # Priority 2: DAV Errors
@@ -89,7 +93,8 @@ class ServerLogParser:
                 "time": timestamp,
                 "type": "WebDAV Error",
                 "msg": msg[:100],
-                "user": user
+                "user": user,
+                "error_code": error_code
             })
         
         # Priority 3: Objectstore Errors
@@ -98,7 +103,8 @@ class ServerLogParser:
                 "time": timestamp,
                 "type": "Objectstore",
                 "msg": msg[:100],
-                "user": user
+                "user": user,
+                "error_code": error_code
             })
         
         # Priority 4: PHP Errors
@@ -107,7 +113,8 @@ class ServerLogParser:
                 "time": timestamp,
                 "type": "PHP Error",
                 "msg": msg[:100],
-                "user": user
+                "user": user,
+                "error_code": error_code
             })
         
         # Priority 5: Other Errors (level 3)
@@ -116,7 +123,8 @@ class ServerLogParser:
                 "time": timestamp,
                 "type": "Error",
                 "msg": msg[:100],
-                "user": user
+                "user": user,
+                "error_code": error_code
             })
         
         # Priority 6: Warnings (level 2)
@@ -125,7 +133,8 @@ class ServerLogParser:
                 "time": timestamp,
                 "type": app or "Warning",
                 "msg": msg[:100],
-                "user": user
+                "user": user,
+                "error_code": error_code
             })
         
         # Priority 7: Info (level 1)
@@ -134,7 +143,8 @@ class ServerLogParser:
                 "time": timestamp,
                 "type": app or "Info",
                 "msg": msg[:100],
-                "user": user
+                "user": user,
+                "error_code": error_code
             })
         
         # Priority 8: Debug (level 0)
@@ -143,10 +153,70 @@ class ServerLogParser:
                 "time": timestamp,
                 "type": app or "Debug",
                 "msg": msg[:100],
-                "user": user
+                "user": user,
+                "error_code": error_code
             })
         
         return False
+    
+    def _extract_error_code(self, data: Dict[str, Any], message: str) -> Optional[str]:
+        """
+        Extract error code from various log sources.
+        
+        Checks multiple locations:
+        1. HTTP status codes (401, 404, 500, etc.)
+        2. Custom error_code fields
+        3. errorCode in messages JSON
+        4. Exception Code field
+        
+        Args:
+            data: Full parsed JSON log entry
+            message: Log message string
+            
+        Returns:
+            Error code string or None
+        """
+        # 1. Check for HTTP status codes in message (various formats)
+        # Format: `GET https://...` resulted in a `401 Unauthorized`
+        http_match = re.search(r'`(GET|POST|PUT|DELETE|PATCH|HEAD|OPTIONS)[^`]*` resulted in a `(\d{3})', message)
+        if http_match:
+            return http_match.group(2)
+        
+        # Format: resulted in a `504 Gateway Timeout`
+        http_match2 = re.search(r'resulted in a `(\d{3})', message)
+        if http_match2:
+            return http_match2.group(1)
+        
+        # 2. Check for custom error_code in data
+        if 'error_code' in data:
+            return str(data['error_code'])
+        
+        # 3. Check for errorCode in message (JSON embedded)
+        error_code_match = re.search(r'"errorCode"\s*:\s*"([^"]+)"', message)
+        if error_code_match:
+            return error_code_match.group(1)
+        
+        # 4. Check exception data for Code field
+        exception = data.get('exception', {})
+        if isinstance(exception, dict) and 'Code' in exception:
+            code = exception['Code']
+            if code and code != 0:  # Ignore zero codes
+                return str(code)
+        
+        # 5. Check for HTTP codes in generic format
+        generic_http = re.search(r'HTTP[/\s]+(\d{3})', message, re.IGNORECASE)
+        if generic_http:
+            return generic_http.group(1)
+        
+        # 6. Check for error codes in format "error: XXX"
+        error_pattern = re.search(r'error[:\s]+([A-Za-z0-9_-]+)', message, re.IGNORECASE)
+        if error_pattern:
+            code = error_pattern.group(1)
+            # Filter out common words that aren't error codes
+            if len(code) < 30 and not code.lower() in ['error', 'failed', 'exception']:
+                return code
+        
+        return None
     
     def _extract_oid(self, message: str) -> str:
         """

@@ -808,18 +808,20 @@ class LogAnalyzerApp(TkinterDnD.Tk if HAS_DND else tk.Tk):
         
         # Create window
         win = tk.Toplevel(self)
-        win.geometry("1000x500")
+        win.geometry("1200x500")
         win.title(f"{title} ({len(entries):,} Einträge)")
         
-        # Create treeview
-        tree = ttk.Treeview(win, columns=("time", "type", "msg"), show="headings")
+        # Create treeview with error_code column
+        tree = ttk.Treeview(win, columns=("time", "type", "error_code", "msg"), show="headings")
         tree.heading("time", text="Zeitstempel")
         tree.heading("type", text="Typ/App")
+        tree.heading("error_code", text="Error Code")
         tree.heading("msg", text="Nachricht / Datei")
         
         tree.column("time", width=180, stretch=False)
-        tree.column("type", width=200, stretch=False)
-        tree.column("msg", width=600)
+        tree.column("type", width=150, stretch=False)
+        tree.column("error_code", width=120, stretch=False)
+        tree.column("msg", width=700)
         
         # Scrollbar
         scrollbar = ttk.Scrollbar(win, orient="vertical", command=tree.yview)
@@ -832,6 +834,7 @@ class LogAnalyzerApp(TkinterDnD.Tk if HAS_DND else tk.Tk):
             tree.insert("", "end", values=(
                 entry.get("time", ""),
                 entry.get("type", ""),
+                entry.get("error_code", "-"),
                 entry.get("msg", "")
             ))
         
@@ -856,14 +859,14 @@ class LogAnalyzerApp(TkinterDnD.Tk if HAS_DND else tk.Tk):
         self.clipboard_clear()
         
         # Header
-        markdown = "| Zeit | Typ | Nachricht |\n|---|---|---|\n"
+        markdown = "| Zeit | Typ | Error Code | Nachricht |\n|---|---|---|---|\n"
         
         # Rows
         for item_id in tree.get_children():
             values = tree.item(item_id, 'values')
             # Escape pipes in content
             escaped = [str(v).replace('|', '\\|') for v in values]
-            markdown += f"| {escaped[0]} | {escaped[1]} | {escaped[2]} |\n"
+            markdown += f"| {escaped[0]} | {escaped[1]} | {escaped[2]} | {escaped[3]} |\n"
         
         self.clipboard_append(markdown)
         messagebox.showinfo("✓ Kopiert", "Markdown-Tabelle in Zwischenablage kopiert!")
@@ -891,13 +894,14 @@ class LogAnalyzerApp(TkinterDnD.Tk if HAS_DND else tk.Tk):
             ws.title = title[:31]  # Excel limit
             
             # Headers
-            ws.append(["Zeitstempel", "Typ", "Nachricht"])
+            ws.append(["Zeitstempel", "Typ", "Error Code", "Nachricht"])
             
             # Data
             for entry in entries:
                 ws.append([
                     entry.get("time", ""),
                     entry.get("type", ""),
+                    entry.get("error_code", "-"),
                     entry.get("msg", "")
                 ])
             

@@ -102,11 +102,46 @@ class ClientLogParser:
             timestamp: Log timestamp
             message: Error message
         """
+        # Extract error code from client message
+        error_code = self._extract_error_code(message)
+        
         self.data_store.add_entry("client_errors", {
             "time": timestamp,
             "type": "Client Error",
-            "msg": message
+            "msg": message,
+            "error_code": error_code
         })
+    
+    def _extract_error_code(self, message: str) -> Optional[str]:
+        """
+        Extract error code from client log message.
+        
+        Args:
+            message: Log message
+            
+        Returns:
+            Error code or None
+        """
+        import re
+        
+        # Check for HTTP status codes
+        http_match = re.search(r'HTTP[/\s]+(\d{3})', message, re.IGNORECASE)
+        if http_match:
+            return http_match.group(1)
+        
+        # Check for QNetworkReply errors
+        network_error = re.search(r'QNetworkReply::NetworkError\((\d+)\)', message)
+        if network_error:
+            return f"NET_{network_error.group(1)}"
+        
+        # Check for error codes in format "Error: XXX" or "error code: XXX"
+        error_match = re.search(r'error\s*(?:code)?[:\s]+([A-Za-z0-9_-]+)', message, re.IGNORECASE)
+        if error_match:
+            code = error_match.group(1)
+            if len(code) < 30:
+                return code
+        
+        return None
     
     def _check_story_patterns(self, timestamp: str, message: str) -> None:
         """
