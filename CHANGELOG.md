@@ -13,7 +13,8 @@ Major enhancement adding batch processing and compressed file support.
 
 ### Added
 - **Multi-File Processing**: Load and analyze multiple log files at once
-  - New "📂📂 Mehrere Dateien..." button for batch selection
+  - Single unified "📂 Datei(en) suchen..." button
+  - Multi-selection via Ctrl+Click or Shift+Click in file dialog
   - Drag & drop multiple files simultaneously
   - Progress indicator shows "Datei X von Y"
   - Combined results from all files in single summary
@@ -30,7 +31,7 @@ Major enhancement adding batch processing and compressed file support.
 - **Test Utilities**: `test_gzip_support.py` creates sample compressed logs
 
 ### Changed
-- **File Selection**: `browse_file()` now returns list for consistency
+- **Unified File Selection**: Single "📂 Datei(en) suchen..." button replaces separate buttons
 - **File Queue System**: Internal queue processes files sequentially
 - **Summary Display**: Shows combined results from all processed files
 - **Config Settings**: Added `SUPPORTED_EXTENSIONS` and `GZIP_EXTENSIONS`

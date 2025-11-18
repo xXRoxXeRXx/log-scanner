@@ -103,8 +103,7 @@ class LogAnalyzerApp(TkinterDnD.Tk if HAS_DND else tk.Tk):
         btn_frame = ttk.Frame(file_frame)
         btn_frame.pack(side="right", anchor="n")
         
-        ttk.Button(btn_frame, text="📂 Datei suchen...", command=self.browse_file).pack(fill="x", pady=(0, 5))
-        ttk.Button(btn_frame, text="📂📂 Mehrere Dateien...", command=self.browse_multiple_files).pack(fill="x", pady=(0, 5))
+        ttk.Button(btn_frame, text="📂 Datei(en) suchen...", command=self.browse_files).pack(fill="x", pady=(0, 5))
         
         if ENABLE_CLIPBOARD_IMPORT:
             ttk.Button(btn_frame, text="📋 Aus Zwischenablage", command=self.paste_and_analyze).pack(fill="x")
@@ -161,22 +160,13 @@ class LogAnalyzerApp(TkinterDnD.Tk if HAS_DND else tk.Tk):
             self.summary_text.tag_bind(tag, "<Button-1>", 
                 lambda e, k=key, t=title: self.open_table_window(k, t))
     
-    def browse_file(self):
-        """Open file dialog and start analysis."""
+    def browse_files(self):
+        """Open file dialog for single or multiple files and start analysis."""
         file_types = [
             ("Log Dateien", " ".join(f"*{ext}" for ext in SUPPORTED_EXTENSIONS)),
             ("Alle Dateien", "*.*")
         ]
-        path = filedialog.askopenfilename(filetypes=file_types)
-        if path:
-            self.start_analysis([path], is_file=True)
-    
-    def browse_multiple_files(self):
-        """Open file dialog for multiple files and start batch analysis."""
-        file_types = [
-            ("Log Dateien", " ".join(f"*{ext}" for ext in SUPPORTED_EXTENSIONS)),
-            ("Alle Dateien", "*.*")
-        ]
+        # askopenfilenames allows multi-selection (Ctrl+Click or Shift+Click)
         paths = filedialog.askopenfilenames(filetypes=file_types)
         if paths:
             self.start_analysis(list(paths), is_file=True)

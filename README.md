@@ -89,8 +89,9 @@ pip install tkinterdnd2 openpyxl
 
 2. **Log-Datei(en) laden**
    - 🖱️ **Drag & Drop**: Eine oder mehrere Dateien ins Fenster ziehen
-   - 📂 **Einzelne Datei**: "📂 Datei suchen..." Button
-   - 📂📂 **Mehrere Dateien**: "📂📂 Mehrere Dateien..." Button
+   - 📂 **Datei(en) Browser**: "📂 Datei(en) suchen..." Button
+     - Einzelne Datei: Einfach anklicken
+     - Mehrere Dateien: **Strg+Klick** oder **Shift+Klick** zum Markieren
    - 📋 **Clipboard**: "📋 Aus Zwischenablage" Button
 
 3. **Unterstützte Dateiformate**
