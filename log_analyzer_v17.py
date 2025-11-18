@@ -9,6 +9,8 @@ import time
 import re
 import threading
 import logging
+import json
+from pathlib import Path
 from typing import Optional, List
 from enum import Enum
 
@@ -68,7 +70,14 @@ class LogAnalyzerApp(TkinterDnD.Tk if HAS_DND else tk.Tk):
         super().__init__()
         
         self.title(f"{APP_TITLE} v{APP_VERSION}")
-        self.geometry(f"{WINDOW_WIDTH}x{WINDOW_HEIGHT}")
+        
+        # UI Preferences
+        self.preferences_file = Path.home() / ".nextcloud_log_analyzer_prefs.json"
+        self.preferences = self._load_preferences()
+        
+        # Apply saved window size or default
+        window_size = self.preferences.get("window_size", f"{WINDOW_WIDTH}x{WINDOW_HEIGHT}")
+        self.geometry(window_size)
         
         # Initialize data store and parsers
         self.data_store = LogDataStore()
@@ -86,6 +95,9 @@ class LogAnalyzerApp(TkinterDnD.Tk if HAS_DND else tk.Tk):
         
         # Setup GUI
         self.setup_gui()
+        
+        # Save preferences on close
+        self.protocol("WM_DELETE_WINDOW", self._on_closing)
         
         logger.info("Application initialized")
     
@@ -734,6 +746,23 @@ class LogAnalyzerApp(TkinterDnD.Tk if HAS_DND else tk.Tk):
         """Display server log summary."""
         self.summary_text.insert(tk.END, "🖥️ Server Analyse:\n", "h2")
         
+        # Add "All Errors" combined view button
+        all_error_categories = ["s3_errors", "dav_errors", "php_errors", "objectstore_errors", "other_errors"]
+        total_errors = sum(self.data_store.get_count(cat) for cat in all_error_categories)
+        if total_errors > 0:
+            self.summary_text.insert(tk.END, f"\n⚠️  Alle Fehler kombiniert: {total_errors:,}\n", "h3")
+            btn = tk.Button(
+                self.summary_text,
+                text=f"📊 Alle Server-Fehler anzeigen ({total_errors:,})",
+                command=lambda: self.open_combined_view(all_error_categories, "Alle Server-Fehler"),
+                bg="#ff6b6b",
+                fg="white",
+                font=("Arial", 10, "bold"),
+                cursor="hand2"
+            )
+            self.summary_text.window_create(tk.END, window=btn)
+            self.summary_text.insert(tk.END, "\n\n")
+        
         # Errors
         categories_error = [
             ("s3_errors", "S3 HTTP Fehler", "s3_filter", "error"),
@@ -797,6 +826,97 @@ class LogAnalyzerApp(TkinterDnD.Tk if HAS_DND else tk.Tk):
         
         logger.error(f"Analysis error: {error_type}: {error_msg}")
     
+    def open_combined_view(self, categories: List[str], title: str):
+        """
+        Open combined view for multiple categories.
+        
+        Args:
+            categories: List of category keys to combine
+            title: Window title
+        """
+        # Collect all entries from specified categories
+        all_entries = []
+        for cat in categories:
+            entries = self.data_store.get_entries(cat)
+            # Add category name to each entry
+            for entry in entries:
+                entry_with_cat = entry.copy()
+                entry_with_cat["category"] = self._category_display_name(cat)
+                all_entries.append(entry_with_cat)
+        
+        if not all_entries:
+            messagebox.showinfo("Info", f"Keine Einträge in den ausgewählten Kategorien")
+            return
+        
+        # Sort by time (newest first)
+        try:
+            from datetime import datetime
+            all_entries.sort(key=lambda x: self._parse_entry_time(x.get("time", "")), reverse=True)
+        except:
+            # Fallback to string sort
+            all_entries.sort(key=lambda x: x.get("time", ""), reverse=True)
+        
+        # Open detail window with category column
+        self.open_table_window_with_category(all_entries, title)
+    
+    def open_table_window_with_category(self, entries: List[dict], title: str):
+        """
+        Open table window with category column for combined views.
+        
+        Args:
+            entries: List of entry dictionaries (with 'category' field)
+            title: Window title
+        """
+        # Simplified: Prepend category to type field for display
+        for entry in entries:
+            cat = entry.pop("category", "")
+            if cat:
+                entry["type"] = f"[{cat}] {entry.get('type', '')}"
+        
+        # Use existing implementation by creating a pseudo-category
+        # Store entries in data_store temporarily
+        temp_category = "_combined_view_temp"
+        self.data_store._data[temp_category] = entries
+        
+        # Open normal table window
+        self.open_table_window(temp_category, title)
+        
+        # Clean up temp category
+        if temp_category in self.data_store._data:
+            del self.data_store._data[temp_category]
+    
+    def _category_display_name(self, category: str) -> str:
+        """Get display name for category."""
+        names = {
+            "s3_errors": "S3",
+            "dav_errors": "DAV",
+            "php_errors": "PHP",
+            "objectstore_errors": "Objectstore",
+            "other_errors": "Andere",
+            "client_errors": "Client",
+        }
+        return names.get(category, category)
+    
+    def _parse_entry_time(self, time_str: str):
+        """Parse time string to datetime for sorting."""
+        from datetime import datetime
+        if not time_str:
+            return datetime.min
+        
+        formats = [
+            "%Y-%m-%d %H:%M:%S.%f",
+            "%Y-%m-%d %H:%M:%S",
+            "%Y-%m-%d %H:%M:%S:%f",
+        ]
+        
+        for fmt in formats:
+            try:
+                return datetime.strptime(time_str.split('.')[0] if '.' in time_str else time_str, fmt.replace('.%f', '').replace(':%f', ''))
+            except:
+                continue
+        
+        return datetime.min
+    
     def open_table_window(self, category: str, title: str):
         """
         Open detailed table window for a category.
@@ -827,6 +947,7 @@ class LogAnalyzerApp(TkinterDnD.Tk if HAS_DND else tk.Tk):
         
         # Store original entries for filtering
         self._detail_entries = entries.copy()
+        self._detail_filtered_entries = entries.copy()  # Track currently visible entries
         self._detail_tree = None  # Will be set below
         self._sort_reverse = {}  # Track sort direction per column
         self._column_names = {  # Store original column names
@@ -845,6 +966,8 @@ class LogAnalyzerApp(TkinterDnD.Tk if HAS_DND else tk.Tk):
         # Column sorting function
         def sort_column(col):
             """Sort treeview by column."""
+            from datetime import datetime
+            
             # Toggle sort direction
             reverse = not self._sort_reverse.get(col, False)
             self._sort_reverse[col] = reverse
@@ -852,10 +975,36 @@ class LogAnalyzerApp(TkinterDnD.Tk if HAS_DND else tk.Tk):
             # Get all items
             items = [(tree.set(item, col), item) for item in tree.get_children('')]
             
-            # Sort items - special handling for line_number (numeric)
+            # Sort items with intelligent type detection
             if col == "line_number":
                 # Numeric sort
                 items.sort(key=lambda x: int(x[0]) if x[0].isdigit() else 0, reverse=reverse)
+            elif col == "time":
+                # DateTime sort with multiple format support
+                def parse_timestamp(ts_str):
+                    """Parse timestamp with fallback to string comparison."""
+                    if not ts_str or ts_str == "-":
+                        return datetime.min if not reverse else datetime.max
+                    
+                    # Try common timestamp formats
+                    formats = [
+                        "%Y-%m-%d %H:%M:%S.%f",  # 2025-11-18 10:15:23.456
+                        "%Y-%m-%d %H:%M:%S",      # 2025-11-18 10:15:23
+                        "%Y-%m-%d %H:%M:%S:%f",   # Client logs: 2025-11-18 10:15:23:456
+                        "%Y-%m-%dT%H:%M:%S.%fZ",  # ISO format with Z
+                        "%Y-%m-%dT%H:%M:%S",      # ISO format without Z
+                    ]
+                    
+                    for fmt in formats:
+                        try:
+                            return datetime.strptime(ts_str.split('.')[0] if '.' in ts_str and len(ts_str.split('.')[1]) > 6 else ts_str, fmt.replace('.%f', '').replace(':%f', ''))
+                        except:
+                            continue
+                    
+                    # Fallback: return min/max for sorting stability
+                    return datetime.min if not reverse else datetime.max
+                
+                items.sort(key=lambda x: parse_timestamp(x[0]), reverse=reverse)
             else:
                 # String sort (case-insensitive)
                 items.sort(key=lambda x: x[0].lower(), reverse=reverse)
@@ -893,6 +1042,86 @@ class LogAnalyzerApp(TkinterDnD.Tk if HAS_DND else tk.Tk):
         scrollbar.pack(side="right", fill="y")
         tree.pack(fill="both", expand=True)
         
+        # Context menu for tree
+        context_menu = tk.Menu(tree, tearoff=0)
+        
+        def show_full_message():
+            """Show full message in a dialog."""
+            selection = tree.selection()
+            if not selection:
+                return
+            
+            values = tree.item(selection[0], 'values')
+            msg = values[5] if len(values) > 5 else ""
+            
+            # Create dialog
+            dialog = tk.Toplevel(win)
+            dialog.title("Volle Nachricht")
+            dialog.geometry("800x400")
+            
+            # Text widget with scrollbar
+            text_frame = ttk.Frame(dialog)
+            text_frame.pack(fill="both", expand=True, padx=10, pady=10)
+            
+            text_widget = tk.Text(text_frame, wrap="word", font=("Consolas", 10))
+            text_scrollbar = ttk.Scrollbar(text_frame, command=text_widget.yview)
+            text_widget.configure(yscrollcommand=text_scrollbar.set)
+            
+            text_scrollbar.pack(side="right", fill="y")
+            text_widget.pack(side="left", fill="both", expand=True)
+            
+            text_widget.insert("1.0", msg)
+            text_widget.config(state="disabled")
+            
+            # Copy button
+            ttk.Button(dialog, text="📋 Kopieren", 
+                      command=lambda: [self.clipboard_clear(), self.clipboard_append(msg),
+                                     messagebox.showinfo("Kopiert", "Nachricht in Zwischenablage kopiert!", parent=dialog)]).pack(pady=5)
+        
+        def copy_row():
+            """Copy selected row to clipboard."""
+            selection = tree.selection()
+            if not selection:
+                return
+            
+            values = tree.item(selection[0], 'values')
+            row_text = " | ".join(str(v) for v in values)
+            
+            self.clipboard_clear()
+            self.clipboard_append(row_text)
+            messagebox.showinfo("✓ Kopiert", "Zeile in Zwischenablage kopiert!")
+        
+        def copy_all_visible():
+            """Copy all visible rows to clipboard."""
+            rows = []
+            for item_id in tree.get_children():
+                values = tree.item(item_id, 'values')
+                rows.append(" | ".join(str(v) for v in values))
+            
+            if not rows:
+                messagebox.showinfo("Info", "Keine Einträge zum Kopieren!")
+                return
+            
+            text = "\n".join(rows)
+            self.clipboard_clear()
+            self.clipboard_append(text)
+            messagebox.showinfo("✓ Kopiert", f"{len(rows)} Zeilen in Zwischenablage kopiert!")
+        
+        context_menu.add_command(label="📄 Volle Nachricht anzeigen", command=show_full_message)
+        context_menu.add_command(label="📋 Zeile kopieren", command=copy_row)
+        context_menu.add_separator()
+        context_menu.add_command(label="📋 Alle sichtbaren kopieren", command=copy_all_visible)
+        
+        def show_context_menu(event):
+            """Show context menu on right-click."""
+            # Select row under cursor
+            row_id = tree.identify_row(event.y)
+            if row_id:
+                tree.selection_set(row_id)
+                context_menu.post(event.x_root, event.y_root)
+        
+        tree.bind("<Button-3>", show_context_menu)  # Right-click
+        
         # Populate initially
         for entry in entries:
             tree.insert("", "end", values=(
@@ -929,6 +1158,9 @@ class LogAnalyzerApp(TkinterDnD.Tk if HAS_DND else tk.Tk):
                     or search_term in entry.get("msg", "").lower()
                 ]
             
+            # Store filtered entries for export
+            self._detail_filtered_entries = filtered
+            
             # Insert filtered entries
             for entry in filtered:
                 tree.insert("", "end", values=(
@@ -961,7 +1193,7 @@ class LogAnalyzerApp(TkinterDnD.Tk if HAS_DND else tk.Tk):
         
         if HAS_OPENPYXL and ENABLE_EXCEL_EXPORT:
             ttk.Button(btn_frame, text="📊 Exportieren (Excel)",
-                      command=lambda: self._export_to_excel(entries, title)).pack(side="left", padx=5)
+                      command=lambda: self._export_to_excel(self._detail_filtered_entries, title)).pack(side="left", padx=5)
     
     def _copy_as_markdown(self, tree: ttk.Treeview):
         """
@@ -1028,6 +1260,40 @@ class LogAnalyzerApp(TkinterDnD.Tk if HAS_DND else tk.Tk):
         except Exception as e:
             logger.exception("Excel export failed")
             messagebox.showerror("Fehler", f"Excel-Export fehlgeschlagen:\n{e}")
+    
+    def _load_preferences(self) -> dict:
+        """Load UI preferences from JSON file."""
+        if not self.preferences_file.exists():
+            return {}
+        
+        try:
+            with open(self.preferences_file, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        except Exception as e:
+            logger.warning(f"Failed to load preferences: {e}")
+            return {}
+    
+    def _save_preferences(self):
+        """Save UI preferences to JSON file."""
+        try:
+            # Get current window size
+            self.preferences["window_size"] = self.geometry()
+            
+            # Save column widths for detail windows (from last opened window)
+            if hasattr(self, '_detail_column_widths'):
+                self.preferences["column_widths"] = self._detail_column_widths
+            
+            with open(self.preferences_file, 'w', encoding='utf-8') as f:
+                json.dump(self.preferences, indent=2, fp=f)
+                
+            logger.info(f"Saved preferences to {self.preferences_file}")
+        except Exception as e:
+            logger.warning(f"Failed to save preferences: {e}")
+    
+    def _on_closing(self):
+        """Handle window close event."""
+        self._save_preferences()
+        self.destroy()
 
 
 def main():

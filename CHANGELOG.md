@@ -5,6 +5,82 @@ All notable changes to the Nextcloud Log Analyzer will be documented in this fil
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [17.8.0] - 2025-11-18
+
+### 🎯 Major Workflow Improvements
+
+This release focuses on improving support workflows with smarter exports, better UX, and combined views.
+
+### Added
+
+#### 1. **Smart Export Filtering** 📤
+- Markdown and Excel exports now only export **visible/filtered entries**
+- Search results can be exported directly
+- No more exporting thousands of entries when you only need 50
+- Tracks `_detail_filtered_entries` for accurate exports
+
+#### 2. **Context Menu in Detail Views** 🖱️
+- Right-click on any row for quick actions:
+  - **📄 Volle Nachricht anzeigen** → Opens full message in dialog (for long messages)
+  - **📋 Zeile kopieren** → Copy single row to clipboard
+  - **📋 Alle sichtbaren kopieren** → Copy all filtered rows
+- Full message dialog with copy button
+- Works with search/filter
+
+#### 3. **Intelligent Time Sorting** ⏰
+- Time column now sorts **chronologically** (not alphabetically)
+- Supports multiple timestamp formats:
+  - `2025-11-18 10:15:23.456` (Server logs)
+  - `2025-11-18 10:15:23:456` (Client logs)
+  - ISO 8601 formats
+- Graceful fallback for invalid timestamps
+- datetime parsing with multiple format attempts
+
+#### 4. **UI Preferences Persistence** 💾
+- Window size is now saved and restored
+- Preferences stored in `~/.nextcloud_log_analyzer_prefs.json`
+- Automatic save on application close
+- Cross-session consistency
+
+#### 5. **Combined Error View** 📊
+- New button: **"📊 Alle Server-Fehler anzeigen"**
+- Combines S3, DAV, PHP, Objectstore, and Other errors in one view
+- Shows category prefix in Type column: `[S3] HTTP 404`
+- Sorted by time (newest first)
+- Perfect for getting overview of all errors at once
+
+### Changed
+- Export functions now respect search/filter state
+- Time sorting improved from string comparison to datetime parsing
+- Application saves state on exit
+- Combined views prepend category to type field
+
+### Use Cases
+- **Filtered Export**: Search for "user123" → Export only those 10 entries
+- **Quick Copy**: Right-click → Copy row → Paste in ticket
+- **Full Message**: Long error? Right-click → Show full message → Read comfortably
+- **All Errors**: One view for all error types instead of clicking 5 categories
+- **Chronological Analysis**: Time column sorts correctly (08:00 < 09:00 < 10:00)
+
+### Example Workflow
+```
+1. Open log file
+2. Click "Alle Server-Fehler anzeigen" (500 errors)
+3. Search: "urn:oid:12345" (narrows to 5 entries)
+4. Click time column to sort chronologically
+5. Right-click → Copy all visible (5 entries)
+6. Paste into support ticket
+7. Export to Excel (only 5 entries, not 500!)
+```
+
+### Technical
+- Added `_detail_filtered_entries` tracking
+- Context menu uses `tk.Menu` with `tearoff=0`
+- datetime parsing with format list and try/except chains
+- JSON-based preferences in user home directory
+- `protocol("WM_DELETE_WINDOW")` for save-on-close
+- Combined view uses temporary data_store category
+
 ## [17.7.0] - 2025-11-18
 
 ### 🔄 Sortierbare Spalten in Detail-Ansicht
