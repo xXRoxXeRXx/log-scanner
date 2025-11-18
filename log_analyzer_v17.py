@@ -33,6 +33,13 @@ except ImportError:
     HAS_OPENPYXL = False
     logging.warning("openpyxl not installed - Excel export unavailable")
 
+try:
+    from tkcalendar import DateEntry
+    HAS_TKCALENDAR = True
+except ImportError:
+    HAS_TKCALENDAR = False
+    logging.warning("tkcalendar not installed - using text entry for dates")
+
 # Setup logging
 logger = setup_logging()
 
@@ -117,16 +124,52 @@ class LogAnalyzerApp(TkinterDnD.Tk if HAS_DND else tk.Tk):
         time_frame.pack(side="left", fill="x", expand=True)
         
         ttk.Label(time_frame, text="Von:").pack(side="left", padx=(0, 5))
-        self.time_start = ttk.Entry(time_frame, width=20)
-        self.time_start.pack(side="left", padx=(0, 10))
-        self.time_start.insert(0, "YYYY-MM-DD HH:MM:SS")
-        self.time_start.bind("<FocusIn>", lambda e: self.time_start.delete(0, tk.END) if self.time_start.get().startswith("YYYY") else None)
+        if HAS_TKCALENDAR:
+            self.time_start = DateEntry(
+                time_frame, 
+                width=18, 
+                background='darkblue',
+                foreground='white', 
+                borderwidth=2,
+                date_pattern='yyyy-mm-dd',
+                locale='de_DE'
+            )
+            self.time_start.pack(side="left", padx=(0, 5))
+            # Time entry for hours:minutes
+            self.time_start_time = ttk.Entry(time_frame, width=6)
+            self.time_start_time.pack(side="left", padx=(0, 10))
+            self.time_start_time.insert(0, "HH:MM")
+            self.time_start_time.bind("<FocusIn>", lambda e: self.time_start_time.delete(0, tk.END) if self.time_start_time.get() == "HH:MM" else None)
+        else:
+            self.time_start = ttk.Entry(time_frame, width=20)
+            self.time_start.pack(side="left", padx=(0, 10))
+            self.time_start.insert(0, "YYYY-MM-DD HH:MM:SS")
+            self.time_start.bind("<FocusIn>", lambda e: self.time_start.delete(0, tk.END) if self.time_start.get().startswith("YYYY") else None)
+            self.time_start_time = None
         
         ttk.Label(time_frame, text="Bis:").pack(side="left", padx=(0, 5))
-        self.time_end = ttk.Entry(time_frame, width=20)
-        self.time_end.pack(side="left", padx=(0, 10))
-        self.time_end.insert(0, "YYYY-MM-DD HH:MM:SS")
-        self.time_end.bind("<FocusIn>", lambda e: self.time_end.delete(0, tk.END) if self.time_end.get().startswith("YYYY") else None)
+        if HAS_TKCALENDAR:
+            self.time_end = DateEntry(
+                time_frame, 
+                width=18, 
+                background='darkblue',
+                foreground='white', 
+                borderwidth=2,
+                date_pattern='yyyy-mm-dd',
+                locale='de_DE'
+            )
+            self.time_end.pack(side="left", padx=(0, 5))
+            # Time entry for hours:minutes
+            self.time_end_time = ttk.Entry(time_frame, width=6)
+            self.time_end_time.pack(side="left", padx=(0, 10))
+            self.time_end_time.insert(0, "HH:MM")
+            self.time_end_time.bind("<FocusIn>", lambda e: self.time_end_time.delete(0, tk.END) if self.time_end_time.get() == "HH:MM" else None)
+        else:
+            self.time_end = ttk.Entry(time_frame, width=20)
+            self.time_end.pack(side="left", padx=(0, 10))
+            self.time_end.insert(0, "YYYY-MM-DD HH:MM:SS")
+            self.time_end.bind("<FocusIn>", lambda e: self.time_end.delete(0, tk.END) if self.time_end.get().startswith("YYYY") else None)
+            self.time_end_time = None
         
         # User filter
         user_frame = ttk.Frame(filter_frame)
@@ -236,27 +279,69 @@ class LogAnalyzerApp(TkinterDnD.Tk if HAS_DND else tk.Tk):
     def apply_filters(self):
         """Apply time and user filters to displayed data."""
         try:
+            from datetime import datetime
             # Parse time filters
             start_time = None
             end_time = None
             
-            start_str = self.time_start.get()
-            if start_str and not start_str.startswith("YYYY"):
-                from datetime import datetime
+            if HAS_TKCALENDAR:
+                # DateEntry mode - get date from DateEntry and time from separate field
                 try:
-                    start_time = datetime.strptime(start_str, "%Y-%m-%d %H:%M:%S")
-                except ValueError:
-                    messagebox.showerror("Fehler", "Ungültiges Startdatum! Format: YYYY-MM-DD HH:MM:SS")
+                    date_str = self.time_start.get_date().strftime("%Y-%m-%d")
+                    time_str = self.time_start_time.get()
+                    if time_str and time_str != "HH:MM":
+                        # Validate time format
+                        if ':' in time_str:
+                            parts = time_str.split(':')
+                            if len(parts) == 2:
+                                start_time = datetime.strptime(f"{date_str} {time_str}:00", "%Y-%m-%d %H:%M:%S")
+                            else:
+                                start_time = datetime.strptime(f"{date_str} {time_str}", "%Y-%m-%d %H:%M:%S")
+                        else:
+                            start_time = datetime.strptime(f"{date_str} 00:00:00", "%Y-%m-%d %H:%M:%S")
+                    else:
+                        # No time specified, use start of day
+                        start_time = datetime.strptime(f"{date_str} 00:00:00", "%Y-%m-%d %H:%M:%S")
+                except ValueError as e:
+                    messagebox.showerror("Fehler", f"Ungültige Startzeit! Format: HH:MM\n{e}")
                     return
-            
-            end_str = self.time_end.get()
-            if end_str and not end_str.startswith("YYYY"):
-                from datetime import datetime
+                
                 try:
-                    end_time = datetime.strptime(end_str, "%Y-%m-%d %H:%M:%S")
-                except ValueError:
-                    messagebox.showerror("Fehler", "Ungültiges Enddatum! Format: YYYY-MM-DD HH:MM:SS")
+                    date_str = self.time_end.get_date().strftime("%Y-%m-%d")
+                    time_str = self.time_end_time.get()
+                    if time_str and time_str != "HH:MM":
+                        # Validate time format
+                        if ':' in time_str:
+                            parts = time_str.split(':')
+                            if len(parts) == 2:
+                                end_time = datetime.strptime(f"{date_str} {time_str}:00", "%Y-%m-%d %H:%M:%S")
+                            else:
+                                end_time = datetime.strptime(f"{date_str} {time_str}", "%Y-%m-%d %H:%M:%S")
+                        else:
+                            end_time = datetime.strptime(f"{date_str} 23:59:59", "%Y-%m-%d %H:%M:%S")
+                    else:
+                        # No time specified, use end of day
+                        end_time = datetime.strptime(f"{date_str} 23:59:59", "%Y-%m-%d %H:%M:%S")
+                except ValueError as e:
+                    messagebox.showerror("Fehler", f"Ungültige Endzeit! Format: HH:MM\n{e}")
                     return
+            else:
+                # Legacy Entry mode
+                start_str = self.time_start.get()
+                if start_str and not start_str.startswith("YYYY"):
+                    try:
+                        start_time = datetime.strptime(start_str, "%Y-%m-%d %H:%M:%S")
+                    except ValueError:
+                        messagebox.showerror("Fehler", "Ungültiges Startdatum! Format: YYYY-MM-DD HH:MM:SS")
+                        return
+                
+                end_str = self.time_end.get()
+                if end_str and not end_str.startswith("YYYY"):
+                    try:
+                        end_time = datetime.strptime(end_str, "%Y-%m-%d %H:%M:%S")
+                    except ValueError:
+                        messagebox.showerror("Fehler", "Ungültiges Enddatum! Format: YYYY-MM-DD HH:MM:SS")
+                        return
             
             # Apply filters to data store
             self.data_store.set_time_filter(start_time, end_time)
@@ -278,11 +363,25 @@ class LogAnalyzerApp(TkinterDnD.Tk if HAS_DND else tk.Tk):
     
     def reset_filters(self):
         """Reset all filters and refresh display."""
+        from datetime import datetime
         self.data_store.clear_filters()
-        self.time_start.delete(0, tk.END)
-        self.time_start.insert(0, "YYYY-MM-DD HH:MM:SS")
-        self.time_end.delete(0, tk.END)
-        self.time_end.insert(0, "YYYY-MM-DD HH:MM:SS")
+        
+        if HAS_TKCALENDAR:
+            # Reset DateEntry to today
+            self.time_start.set_date(datetime.now())
+            self.time_end.set_date(datetime.now())
+            # Clear time fields
+            self.time_start_time.delete(0, tk.END)
+            self.time_start_time.insert(0, "HH:MM")
+            self.time_end_time.delete(0, tk.END)
+            self.time_end_time.insert(0, "HH:MM")
+        else:
+            # Legacy Entry mode
+            self.time_start.delete(0, tk.END)
+            self.time_start.insert(0, "YYYY-MM-DD HH:MM:SS")
+            self.time_end.delete(0, tk.END)
+            self.time_end.insert(0, "YYYY-MM-DD HH:MM:SS")
+        
         self.user_filter.current(0)
         self._finalize_analysis()
         messagebox.showinfo("Filter", "Filter zurückgesetzt!")

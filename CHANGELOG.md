@@ -5,6 +5,30 @@ All notable changes to the Nextcloud Log Analyzer will be documented in this fil
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [17.3.0] - 2025-11-18
+
+### 🗓️ DatePicker Enhancement
+
+Added visual datepicker for time filters, making date selection more user-friendly.
+
+### Added
+- **Visual DatePicker** 📅
+  - Uses `tkcalendar.DateEntry` widget with calendar popup
+  - Click on date field opens interactive calendar
+  - Separate time input fields (HH:MM format) for hours/minutes
+  - Date format: YYYY-MM-DD (automatic from calendar)
+  - Time defaults: 00:00:00 (start), 23:59:59 (end) if not specified
+  - Fallback to text entry if tkcalendar not installed
+
+### Changed
+- Time filter UI now uses DateEntry + time field instead of single text input
+- Improved date/time parsing with intelligent defaults
+- Better error messages for invalid time format
+
+### Dependencies
+- Added optional dependency: `tkcalendar` (for DateEntry widget)
+- Install with: `pip install tkcalendar`
+
 ## [17.2.0] - 2025-11-18
 
 ### 🔍 Filter & Search Support

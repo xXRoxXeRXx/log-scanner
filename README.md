@@ -72,9 +72,10 @@ python log_scanner.py
 #### Optional (empfohlen)
 - `tkinterdnd2` - Drag & Drop Funktionalität
 - `openpyxl` - Excel Export
+- `tkcalendar` - Visueller Datepicker für Zeitfilter 📅
 
 ```powershell
-pip install tkinterdnd2 openpyxl
+pip install tkinterdnd2 openpyxl tkcalendar
 ```
 
 ## 🚀 Verwendung
@@ -171,20 +172,33 @@ ENABLE_DRAG_DROP = True
 
 Die App bietet leistungsstarke Filter für Support-Szenarien:
 
-### Zeitfilter ⏰
+### Zeitfilter ⏰ mit Datepicker 📅
 
-**Format:** `YYYY-MM-DD HH:MM:SS`
+**Visueller Datepicker:** Klick auf das Datumsfeld öffnet einen interaktiven Kalender
+
+**Format:**
+- **Datum:** Auswahl über Kalender (YYYY-MM-DD)
+- **Zeit:** Optionales Eingabefeld für Stunde:Minute (HH:MM)
+- **Automatische Defaults:**
+  - Startzeit ohne Zeit-Eingabe: `00:00:00` (Tagesbeginn)
+  - Endzeit ohne Zeit-Eingabe: `23:59:59` (Tagesende)
 
 **Beispiele:**
 ```
-Von: 2025-11-18 10:00:00
-Bis: 2025-11-18 12:00:00
+Von: [Kalender: 2025-11-18] + Zeit: 10:00
+Bis: [Kalender: 2025-11-18] + Zeit: 12:00
 → Zeigt nur Logs zwischen 10 und 12 Uhr
+
+Von: [Kalender: 2025-11-18] + Zeit: (leer)
+Bis: [Kalender: 2025-11-18] + Zeit: (leer)
+→ Zeigt alle Logs vom 18.11.2025 (00:00:00 bis 23:59:59)
 ```
 
 **Teilfilter:**
 - Nur "Von" ausfüllen → Zeigt alles ab diesem Zeitpunkt
 - Nur "Bis" ausfüllen → Zeigt alles bis zu diesem Zeitpunkt
+
+**Fallback:** Ohne `tkcalendar` wird klassisches Textfeld verwendet (Format: `YYYY-MM-DD HH:MM:SS`)
 
 ### User-Filter 👤
 
@@ -201,8 +215,8 @@ Bis: 2025-11-18 12:00:00
 **Support-Szenario:**
 ```
 User meldet: "Ich konnte zwischen 10 und 11 Uhr nicht syncen"
-→ Von: 2025-11-18 10:00:00
-→ Bis: 2025-11-18 11:00:00
+→ Von: [Kalender: 2025-11-18] + Zeit: 10:00
+→ Bis: [Kalender: 2025-11-18] + Zeit: 11:00
 → User: max.mustermann
 → Filter anwenden
 → Zeigt nur seine Fehler in diesem Zeitfenster!
