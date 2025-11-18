@@ -1,8 +1,0 @@
-2025-11-18 17:46:38,387 - config - INFO - Starting Nextcloud Log Analyzer
-2025-11-18 17:46:38,524 - server_parser - INFO - ServerLogParser initialized
-2025-11-18 17:46:38,525 - client_parser - INFO - ClientLogParser initialized
-2025-11-18 17:46:39,018 - config - INFO - Application initialized
-2025-11-18 17:46:46,811 - config - WARNING - Ungewöhnliche Dateierweiterung: .3
-2025-11-18 17:46:46,812 - data_store - INFO - Data store cleared
-2025-11-18 17:46:46,840 - config - INFO - Analysis complete: 344 lines in 0.00s
-2025-11-18 17:46:55,108 - config - INFO - Application closed
