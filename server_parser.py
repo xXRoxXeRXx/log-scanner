@@ -188,6 +188,7 @@ class ServerLogParser:
         2. Custom error_code fields
         3. errorCode in messages JSON
         4. Exception Code field
+        5. Exception Message field
         
         Args:
             data: Full parsed JSON log entry
@@ -196,14 +197,23 @@ class ServerLogParser:
         Returns:
             Error code string or None
         """
-        # 1. Check for HTTP status codes in message (various formats)
+        # Get exception message if available
+        exception = data.get('exception', {})
+        exception_msg = ""
+        if isinstance(exception, dict) and 'Message' in exception:
+            exception_msg = exception['Message']
+        
+        # Combine message and exception_msg for searching
+        combined_msg = message + " " + exception_msg
+        
+        # 1. Check for HTTP status codes in combined message (various formats)
         # Format: `GET https://...` resulted in a `401 Unauthorized`
-        http_match = re.search(r'`(GET|POST|PUT|DELETE|PATCH|HEAD|OPTIONS)[^`]*` resulted in a `(\d{3})', message)
+        http_match = re.search(r'`(GET|POST|PUT|DELETE|PATCH|HEAD|OPTIONS)[^`]*` resulted in a `(\d{3})', combined_msg)
         if http_match:
             return http_match.group(2)
         
         # Format: resulted in a `504 Gateway Timeout`
-        http_match2 = re.search(r'resulted in a `(\d{3})', message)
+        http_match2 = re.search(r'resulted in a `(\d{3})', combined_msg)
         if http_match2:
             return http_match2.group(1)
         
@@ -212,24 +222,23 @@ class ServerLogParser:
             return str(data['error_code'])
         
         # 3. Check for errorCode in message (JSON embedded)
-        error_code_match = re.search(r'"errorCode"\s*:\s*"([^"]+)"', message)
+        error_code_match = re.search(r'"errorCode"\s*:\s*"([^"]+)"', combined_msg)
         if error_code_match:
             return error_code_match.group(1)
         
         # 4. Check exception data for Code field
-        exception = data.get('exception', {})
         if isinstance(exception, dict) and 'Code' in exception:
             code = exception['Code']
             if code and code != 0:  # Ignore zero codes
                 return str(code)
         
         # 5. Check for HTTP codes in generic format
-        generic_http = re.search(r'HTTP[/\s]+(\d{3})', message, re.IGNORECASE)
+        generic_http = re.search(r'HTTP[/\s]+(\d{3})', combined_msg, re.IGNORECASE)
         if generic_http:
             return generic_http.group(1)
         
         # 6. Check for error codes in format "error: XXX"
-        error_pattern = re.search(r'error[:\s]+([A-Za-z0-9_-]+)', message, re.IGNORECASE)
+        error_pattern = re.search(r'error[:\s]+([A-Za-z0-9_-]+)', combined_msg, re.IGNORECASE)
         if error_pattern:
             code = error_pattern.group(1)
             # Filter out common words that aren't error codes

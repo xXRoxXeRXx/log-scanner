@@ -5,6 +5,43 @@ All notable changes to the Nextcloud Log Analyzer will be documented in this fil
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [17.8.1] - 2025-11-18
+
+### 🐛 Bug Fix
+
+#### Improved Error Code Extraction from Exception Messages
+
+**Problem**: Error codes in deep exception messages were not detected
+- Example: Line 1 of log shows `503 Service Unavailable` in `exception.Message` field
+- Previous version only searched top-level `message` field
+- Result: Error code showed as "-" instead of "503"
+
+**Solution**: Search both message fields
+- Now combines `message` + `exception.Message` into `combined_msg`
+- All regex patterns search the combined message
+- Extracts HTTP codes from: `` `HEAD https://...` resulted in a `503 Service Unavailable` ``
+
+**Impact**: 
+- More accurate error code detection for S3/Objectstore errors
+- Better error analysis and grouping
+- Improved support workflows
+
+**Technical**:
+- Modified `_extract_error_code()` in `server_parser.py`
+- Added `exception_msg` extraction from `data['exception']['Message']`
+- Changed all searches from `message` to `combined_msg`
+
+**Example**:
+```json
+{
+  "message": "Could not get object urn:oid:939315",
+  "exception": {
+    "Message": "...resulted in a `503 Service Unavailable` response..."
+  }
+}
+```
+Now correctly extracts: `503` ✅ (previously: `-` ❌)
+
 ## [17.8.0] - 2025-11-18
 
 ### 🎯 Major Workflow Improvements
