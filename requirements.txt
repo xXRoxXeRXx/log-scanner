@@ -1,7 +1,11 @@
 # Nextcloud Log Analyzer Requirements
 
 # Core dependencies
-tkinter  # Usually included with Python
+# tkinter is included with Python - no pip install needed
+# If tkinter is missing on Linux, install via system package manager:
+#   Ubuntu/Debian: sudo apt-get install python3-tk
+#   Fedora: sudo dnf install python3-tkinter
+#   macOS: Should be included with Python from python.org
 
 # Optional but recommended
 tkinterdnd2>=0.3.0  # For drag & drop support
