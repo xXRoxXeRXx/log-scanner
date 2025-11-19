@@ -152,8 +152,14 @@ class ClientLogParser:
         if occ_simple:
             return occ_simple.group(1)
         
-        # Check for HTTP status codes
-        http_match = re.search(r'HTTP[/\s]+(\d{3})', message, re.IGNORECASE)
+        # Check for HTTP status codes (multiple patterns)
+        # Pattern 1: "HTTP status 404"
+        http_status = re.search(r'HTTP\s+status\s+(\d{3})', message, re.IGNORECASE)
+        if http_status:
+            return http_status.group(1)
+        
+        # Pattern 2: "HTTP/1.1 404" or "HTTP 404" or "HTTP/2 404"
+        http_match = re.search(r'HTTP(?:/[\d.]+)?\s+(\d{3})', message, re.IGNORECASE)
         if http_match:
             return http_match.group(1)
         
