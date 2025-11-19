@@ -37,5 +37,9 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
 ENV PYTHONUNBUFFERED=1
 ENV PORT=8000
 
-# Run the application
-CMD ["python", "-m", "uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Run the application with increased timeouts
+CMD ["python", "-m", "uvicorn", "backend.main:app", \
+     "--host", "0.0.0.0", \
+     "--port", "8000", \
+     "--timeout-keep-alive", "300", \
+     "--timeout-graceful-shutdown", "30"]

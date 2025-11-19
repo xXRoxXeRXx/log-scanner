@@ -491,12 +491,12 @@
 
                         // Timeout
                         xhr.addEventListener('timeout', () => {
-                            reject(new Error('Upload-Timeout'));
+                            reject(new Error('Upload-Timeout - Datei zu groß oder Netzwerk zu langsam. Bitte versuche eine kleinere Datei.'));
                         });
 
                         // Send request
                         xhr.open('POST', '/api/upload');
-                        xhr.timeout = 300000; // 5 minutes timeout
+                        xhr.timeout = 600000; // 10 minutes timeout (600 seconds)
                         xhr.send(formData);
                     });
                 }
