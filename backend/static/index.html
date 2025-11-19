@@ -207,7 +207,7 @@
 <body>
     <div class="container" x-data="uploadApp()">
         <h1>🔍 Nextcloud Log Analyzer</h1>
-        <p class="subtitle">Upload .log oder .gz Dateien für Analyse</p>
+        <p class="subtitle">Upload .log, .gz oder .zip Dateien für Analyse</p>
 
         <!-- Upload Zone -->
         <div class="upload-zone"
@@ -219,13 +219,13 @@
             
             <div class="upload-icon">📁</div>
             <div class="upload-text">Dateien hier ablegen oder klicken</div>
-            <div class="upload-hint">Unterstützt: .log, .txt, .gz (max 2GB pro Datei)</div>
+            <div class="upload-hint">Unterstützt: .log, .txt, .gz, .zip (max 2GB pro Datei)</div>
             
             <input type="file"
                    x-ref="fileInput"
                    @change="handleFiles($event)"
                    multiple
-                   accept=".log,.txt,.gz"
+                   accept=".log,.txt,.gz,.zip"
                    style="display: none;">
         </div>
 
@@ -299,11 +299,11 @@
                     // Filter valid files
                     const validFiles = newFiles.filter(file => {
                         const ext = file.name.split('.').pop().toLowerCase();
-                        return ['log', 'txt', 'gz'].includes(ext);
+                        return ['log', 'txt', 'gz', 'zip'].includes(ext);
                     });
 
                     if (validFiles.length < newFiles.length) {
-                        this.error = 'Einige Dateien wurden übersprungen (nur .log, .txt, .gz erlaubt)';
+                        this.error = 'Einige Dateien wurden übersprungen (nur .log, .txt, .gz, .zip erlaubt)';
                         setTimeout(() => this.error = null, 3000);
                     }
 

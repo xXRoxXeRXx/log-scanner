@@ -3,12 +3,15 @@ Nextcloud Log Analyzer - FastAPI Backend
 Simplified Docker Web Deployment
 
 No Celery, No Redis, No PostgreSQL - Just FastAPI + Synchronous Processing
-Version: 1.0.4 - DataStore attributes fixed
+Version: 1.0.5 - ZIP archive support with automatic extraction
 """
 
 import os
 import json
 import uuid
+import zipfile
+import tempfile
+import shutil
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional
@@ -91,6 +94,51 @@ class UploadResponse(BaseModel):
 
 # === Helper Functions ===
 
+def extract_zip_logs(zip_path: Path, extract_dir: Path) -> List[Path]:
+    """
+    Extract log files from ZIP archive
+    
+    Args:
+        zip_path: Path to ZIP file
+        extract_dir: Directory to extract files to
+        
+    Returns:
+        List of extracted log file paths
+    """
+    log_files = []
+    
+    try:
+        with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+            # Get all entries
+            for file_info in zip_ref.namelist():
+                # Only extract files from logs/ directory
+                if file_info.startswith('logs/') and not file_info.endswith('/'):
+                    # Check if it's a log file
+                    filename = Path(file_info).name
+                    if filename.endswith(('.log', '.txt', '.gz', '.log.0', '.log.1', '.log.2', '.log.3', '.log.4', '.log.5')):
+                        # Extract to analysis directory
+                        extract_path = extract_dir / filename
+                        with zip_ref.open(file_info) as source:
+                            with open(extract_path, 'wb') as target:
+                                shutil.copyfileobj(source, target)
+                        log_files.append(extract_path)
+                        print(f"[ZIP] Extracted: {filename} ({extract_path.stat().st_size} bytes)")
+    
+    except zipfile.BadZipFile:
+        print(f"[ERROR] Invalid ZIP file: {zip_path}")
+        raise HTTPException(status_code=400, detail=f"Invalid ZIP file: {zip_path.name}")
+    
+    if not log_files:
+        print(f"[WARNING] No log files found in ZIP: {zip_path}")
+        raise HTTPException(
+            status_code=400, 
+            detail="No log files found in ZIP archive. Expected files in 'logs/' directory with extensions: .log, .txt, .gz"
+        )
+    
+    print(f"[ZIP] Extracted {len(log_files)} log files from {zip_path.name}")
+    return log_files
+
+
 def analyze_logs_sync(file_paths: List[Path]) -> Dict:
     """
     Synchronous log analysis using web_parser
@@ -137,15 +185,20 @@ async def health_check():
 
 @app.post("/api/upload", response_model=UploadResponse)
 async def upload_and_analyze(
-    files: List[UploadFile] = File(..., description="Log files to analyze")
+    files: List[UploadFile] = File(..., description="Log files or ZIP archives to analyze")
 ):
     """
     Upload log files and run analysis synchronously
     
     This endpoint:
     1. Saves uploaded files
-    2. Runs analysis immediately (no background job)
-    3. Returns analysis ID
+    2. If ZIP file: extracts log files from logs/ directory
+    3. Runs analysis immediately (no background job)
+    4. Returns analysis ID
+    
+    Supported formats:
+    - Direct log files: .log, .txt, .gz
+    - ZIP archives: .zip (will extract files from logs/ directory)
     
     Max file size: 2GB per file
     """
@@ -157,14 +210,17 @@ async def upload_and_analyze(
     analysis_dir = UPLOAD_DIR / analysis_id
     analysis_dir.mkdir(exist_ok=True)
     
-    # Save uploaded files
-    saved_files = []
+    # Save uploaded files and extract ZIPs
+    files_to_analyze = []
+    
     for file in files:
+        file_lower = file.filename.lower()
+        
         # Check file extension
-        if not file.filename.endswith(('.log', '.txt', '.gz')):
+        if not file_lower.endswith(('.log', '.txt', '.gz', '.zip')):
             raise HTTPException(
                 status_code=400,
-                detail=f"Invalid file type: {file.filename}. Only .log, .txt, .gz allowed"
+                detail=f"Invalid file type: {file.filename}. Only .log, .txt, .gz, .zip allowed"
             )
         
         # Save file
@@ -181,10 +237,29 @@ async def upload_and_analyze(
             
             await f.write(content)
         
-        saved_files.append(file_path)
+        # Handle ZIP files
+        if file_lower.endswith('.zip'):
+            print(f"[UPLOAD] ZIP file detected: {file.filename}")
+            extracted_files = extract_zip_logs(file_path, analysis_dir)
+            files_to_analyze.extend(extracted_files)
+            
+            # Remove ZIP file after extraction
+            file_path.unlink()
+            print(f"[CLEANUP] Removed ZIP file: {file.filename}")
+        else:
+            # Regular log file
+            files_to_analyze.append(file_path)
+    
+    if not files_to_analyze:
+        raise HTTPException(
+            status_code=400,
+            detail="No valid log files found. For ZIP files, ensure logs are in 'logs/' directory."
+        )
+    
+    print(f"[ANALYZE] Processing {len(files_to_analyze)} log files...")
     
     # Run analysis synchronously
-    result = analyze_logs_sync(saved_files)
+    result = analyze_logs_sync(files_to_analyze)
     
     # Add metadata
     result["id"] = analysis_id
@@ -200,7 +275,7 @@ async def upload_and_analyze(
     return UploadResponse(
         analysis_id=analysis_id,
         message="Analysis completed",
-        file_count=len(files)
+        file_count=len(files_to_analyze)
     )
 
 
