@@ -245,6 +245,121 @@
             display: flex;
             gap: 10px;
         }
+
+        /* Root Cause Analysis Styles */
+        .root-cause-container {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .root-cause-header h3 {
+            margin: 0 0 5px 0;
+            color: #2d3748;
+            font-size: 22px;
+        }
+
+        .root-cause-subtitle {
+            margin: 0 0 20px 0;
+            color: #718096;
+            font-size: 14px;
+        }
+
+        .root-cause-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 15px;
+        }
+
+        .root-cause-card {
+            border-radius: 10px;
+            padding: 20px;
+            display: flex;
+            gap: 15px;
+            border-left: 4px solid;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .root-cause-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .severity-critical {
+            background: #fff5f5;
+            border-left-color: #e53e3e;
+        }
+
+        .severity-high {
+            background: #fffaf0;
+            border-left-color: #ed8936;
+        }
+
+        .severity-medium {
+            background: #fffff0;
+            border-left-color: #ecc94b;
+        }
+
+        .severity-low {
+            background: #f0f9ff;
+            border-left-color: #4299e1;
+        }
+
+        .root-cause-icon {
+            font-size: 32px;
+            line-height: 1;
+            flex-shrink: 0;
+        }
+
+        .root-cause-content {
+            flex: 1;
+        }
+
+        .root-cause-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: #2d3748;
+            margin-bottom: 5px;
+        }
+
+        .root-cause-description {
+            font-size: 14px;
+            color: #4a5568;
+            margin-bottom: 10px;
+            line-height: 1.5;
+        }
+
+        .root-cause-stats {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .root-cause-count {
+            font-size: 13px;
+            font-weight: 600;
+            color: #2d3748;
+        }
+
+        .root-cause-percent {
+            font-size: 13px;
+            color: #718096;
+        }
+
+        .root-cause-suggestion {
+            font-size: 13px;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.7);
+            border-radius: 6px;
+            line-height: 1.5;
+        }
+
+        .root-cause-suggestion strong {
+            color: #2d3748;
+        }
     </style>
 </head>
 <body>
@@ -295,6 +410,32 @@
                 <div class="actions">
                     <button @click="exportJSON()" class="btn btn-primary">📥 JSON Export</button>
                     <button @click="deleteAnalysis()" class="btn btn-danger">🗑️ Löschen</button>
+                </div>
+            </div>
+
+            <!-- Root Cause Analysis -->
+            <div x-show="rootCause.issues.length > 0" class="root-cause-container" style="display: none;">
+                <div class="root-cause-header">
+                    <h3>🔍 Root Cause Analyse</h3>
+                    <p class="root-cause-subtitle">Automatisch erkannte Hauptursachen basierend auf Log-Mustern</p>
+                </div>
+                <div class="root-cause-grid">
+                    <template x-for="issue in rootCause.issues" :key="issue.type">
+                        <div class="root-cause-card" :class="'severity-' + issue.severity">
+                            <div class="root-cause-icon" x-text="issue.icon"></div>
+                            <div class="root-cause-content">
+                                <div class="root-cause-title" x-text="issue.title"></div>
+                                <div class="root-cause-description" x-text="issue.description"></div>
+                                <div class="root-cause-stats">
+                                    <span class="root-cause-count" x-text="issue.count + ' Vorkommen'"></span>
+                                    <span class="root-cause-percent" x-text="'(' + issue.percentage + '%)'"></span>
+                                </div>
+                                <div class="root-cause-suggestion" x-show="issue.suggestion">
+                                    <strong>Lösung:</strong> <span x-text="issue.suggestion"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
                 </div>
             </div>
 
@@ -585,6 +726,7 @@
                 currentPage: 1,
                 entriesPerPage: 100,
                 selectedEntry: null, // Track which entry's details are expanded
+                rootCause: { issues: [] }, // Root cause analysis data
                 
                 // Filter states
                 filterDateFrom: '',
@@ -799,6 +941,9 @@
                         console.log('📝 Entries count:', this.result?.entries?.length);
                         console.log('📝 First entry:', this.result?.entries?.[0]);
                         
+                        // Perform root cause analysis
+                        this.analyzeRootCause();
+                        
                         // Wait for Alpine to render, then create chart with additional delay
                         this.$nextTick(() => {
                             setTimeout(() => {
@@ -956,6 +1101,156 @@
                     } catch (error) {
                         console.error('Chart creation failed:', error);
                     }
+                },
+
+                analyzeRootCause() {
+                    if (!this.result?.entries) return;
+                    
+                    const issues = [];
+                    const totalErrors = this.result.entries.filter(e => 
+                        e.category === 'client_errors' || 
+                        e.category.includes('error')
+                    ).length;
+                    
+                    if (totalErrors === 0) return;
+                    
+                    // Analyze error codes
+                    const errorCodes = {};
+                    const httpErrors = {};
+                    const messagePatterns = {};
+                    
+                    this.result.entries.forEach(entry => {
+                        if (entry.category === 'client_errors' || entry.category.includes('error')) {
+                            // Count error codes
+                            if (entry.error_code && entry.error_code !== null && entry.error_code !== 'null') {
+                                errorCodes[entry.error_code] = (errorCodes[entry.error_code] || 0) + 1;
+                            }
+                            
+                            // Extract HTTP status codes
+                            const httpMatch = entry.message?.match(/HTTP.*?(\d{3})|status\s+(\d{3})/i);
+                            if (httpMatch) {
+                                const status = httpMatch[1] || httpMatch[2];
+                                httpErrors[status] = (httpErrors[status] || 0) + 1;
+                            }
+                            
+                            // Pattern matching for common issues
+                            const msg = entry.message?.toLowerCase() || '';
+                            if (msg.includes('symbolic') || msg.includes('symlink')) {
+                                messagePatterns['symlink'] = (messagePatterns['symlink'] || 0) + 1;
+                            }
+                            if (msg.includes('not found') || msg.includes('404')) {
+                                messagePatterns['notfound'] = (messagePatterns['notfound'] || 0) + 1;
+                            }
+                            if (msg.includes('permission') || msg.includes('forbidden') || msg.includes('403')) {
+                                messagePatterns['permission'] = (messagePatterns['permission'] || 0) + 1;
+                            }
+                            if (msg.includes('network') || msg.includes('connection') || msg.includes('timeout')) {
+                                messagePatterns['network'] = (messagePatterns['network'] || 0) + 1;
+                            }
+                            if (msg.includes('invalid') && msg.includes('filename')) {
+                                messagePatterns['invalidname'] = (messagePatterns['invalidname'] || 0) + 1;
+                            }
+                        }
+                    });
+                    
+                    // Generate issues based on patterns
+                    
+                    // FileIgnored errors (symbolic links)
+                    if (errorCodes['FileIgnored'] > 10) {
+                        const percentage = ((errorCodes['FileIgnored'] / totalErrors) * 100).toFixed(1);
+                        issues.push({
+                            type: 'fileignored',
+                            severity: percentage > 30 ? 'high' : 'medium',
+                            icon: '🔗',
+                            title: 'Symbolische Links werden nicht synchronisiert',
+                            description: `${errorCodes['FileIgnored']} Dateien/Ordner können nicht synchronisiert werden, da es sich um symbolische Verknüpfungen handelt.`,
+                            count: errorCodes['FileIgnored'],
+                            percentage: percentage,
+                            suggestion: 'Symbolische Links sind nicht synchronisierbar. Ersetzen Sie diese durch echte Ordner oder Kopien der Dateien, oder schließen Sie diese Pfade von der Synchronisation aus.'
+                        });
+                    }
+                    
+                    // HTTP 404 errors
+                    if (httpErrors['404'] > 10) {
+                        const percentage = ((httpErrors['404'] / totalErrors) * 100).toFixed(1);
+                        issues.push({
+                            type: 'http404',
+                            severity: percentage > 20 ? 'high' : 'medium',
+                            icon: '🔍',
+                            title: 'Dateien auf Server nicht gefunden (HTTP 404)',
+                            description: `${httpErrors['404']} Anfragen schlugen fehl, weil Dateien auf dem Server nicht existieren.`,
+                            count: httpErrors['404'],
+                            percentage: percentage,
+                            suggestion: 'Dateien wurden möglicherweise auf dem Server gelöscht oder verschoben. Prüfen Sie den Server-Speicher oder synchronisieren Sie den Client neu.'
+                        });
+                    }
+                    
+                    // HTTP 403 Permission errors
+                    if (httpErrors['403'] > 5) {
+                        const percentage = ((httpErrors['403'] / totalErrors) * 100).toFixed(1);
+                        issues.push({
+                            type: 'http403',
+                            severity: 'high',
+                            icon: '🚫',
+                            title: 'Zugriff verweigert (HTTP 403)',
+                            description: `${httpErrors['403']} Anfragen wurden aufgrund fehlender Berechtigungen abgelehnt.`,
+                            count: httpErrors['403'],
+                            percentage: percentage,
+                            suggestion: 'Überprüfen Sie die Benutzerberechtigungen auf dem Server. Möglicherweise fehlen Lese-/Schreibrechte für bestimmte Ordner.'
+                        });
+                    }
+                    
+                    // Network/Connection errors
+                    if (messagePatterns['network'] > 20) {
+                        const percentage = ((messagePatterns['network'] / totalErrors) * 100).toFixed(1);
+                        issues.push({
+                            type: 'network',
+                            severity: percentage > 40 ? 'critical' : 'high',
+                            icon: '🌐',
+                            title: 'Netzwerkverbindungsprobleme',
+                            description: `${messagePatterns['network']} Fehler stehen im Zusammenhang mit Netzwerkproblemen oder Timeouts.`,
+                            count: messagePatterns['network'],
+                            percentage: percentage,
+                            suggestion: 'Prüfen Sie die Internetverbindung, Firewall-Einstellungen und die Erreichbarkeit des Nextcloud-Servers. Möglicherweise ist der Server überlastet oder es gibt DNS-Probleme.'
+                        });
+                    }
+                    
+                    // Invalid filename errors
+                    if (errorCodes['FileNameInvalidOnServer'] > 3 || messagePatterns['invalidname'] > 3) {
+                        const count = (errorCodes['FileNameInvalidOnServer'] || 0) + (messagePatterns['invalidname'] || 0);
+                        const percentage = ((count / totalErrors) * 100).toFixed(1);
+                        issues.push({
+                            type: 'invalidname',
+                            severity: 'medium',
+                            icon: '📝',
+                            title: 'Ungültige Dateinamen',
+                            description: `${count} Dateien haben Namen, die auf dem Server nicht erlaubt sind (z.B. Sonderzeichen, zu lang).`,
+                            count: count,
+                            percentage: percentage,
+                            suggestion: 'Benennen Sie die betroffenen Dateien um. Vermeiden Sie Sonderzeichen wie :, *, ?, ", <, >, | und sehr lange Dateinamen.'
+                        });
+                    }
+                    
+                    // SyncError
+                    if (errorCodes['SyncError'] > 3) {
+                        const percentage = ((errorCodes['SyncError'] / totalErrors) * 100).toFixed(1);
+                        issues.push({
+                            type: 'syncerror',
+                            severity: 'high',
+                            icon: '⚠️',
+                            title: 'Allgemeine Synchronisationsfehler',
+                            description: `${errorCodes['SyncError']} allgemeine Synchronisationsfehler wurden erkannt.`,
+                            count: errorCodes['SyncError'],
+                            percentage: percentage,
+                            suggestion: 'Diese Fehler können verschiedene Ursachen haben. Prüfen Sie die Detail-Logs und erwägen Sie einen Neustart des Clients oder eine Neusynchronisation.'
+                        });
+                    }
+                    
+                    // Sort by count (most frequent first)
+                    issues.sort((a, b) => b.count - a.count);
+                    
+                    this.rootCause.issues = issues;
+                    console.log('🔍 Root Cause Analysis:', issues);
                 },
 
                 exportJSON() {

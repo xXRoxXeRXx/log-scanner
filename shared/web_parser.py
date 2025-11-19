@@ -205,7 +205,7 @@ def analyze_log_files(file_paths: List[Path]) -> Dict:
         for entry in data_store._data.get("client_errors", []):
             all_entries.append({
                 "time": entry.get("time", ""),
-                "type": "ERROR",
+                "type": entry.get("type", "ERROR"),  # Use type from parser (WARNING/ERROR/INFO)
                 "message": entry.get("msg", entry.get("message", "")),
                 "category": "client_errors",
                 "error_code": entry.get("error_code", ""),
