@@ -280,6 +280,7 @@
             gap: 15px;
             border-left: 4px solid;
             transition: transform 0.2s, box-shadow 0.2s;
+            cursor: pointer;
         }
 
         .root-cause-card:hover {
@@ -287,9 +288,17 @@
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
         }
 
+        .root-cause-card:active {
+            transform: translateY(0);
+        }
+
         .severity-critical {
             background: #fff5f5;
             border-left-color: #e53e3e;
+        }
+
+        .severity-critical:hover {
+            background: #fed7d7;
         }
 
         .severity-high {
@@ -297,14 +306,26 @@
             border-left-color: #ed8936;
         }
 
+        .severity-high:hover {
+            background: #feebc8;
+        }
+
         .severity-medium {
             background: #fffff0;
             border-left-color: #ecc94b;
         }
 
+        .severity-medium:hover {
+            background: #fefcbf;
+        }
+
         .severity-low {
             background: #f0f9ff;
             border-left-color: #4299e1;
+        }
+
+        .severity-low:hover {
+            background: #bee3f8;
         }
 
         .root-cause-icon {
@@ -417,11 +438,14 @@
             <div x-show="rootCause.issues.length > 0" class="root-cause-container" style="display: none;">
                 <div class="root-cause-header">
                     <h3>🔍 Root Cause Analyse</h3>
-                    <p class="root-cause-subtitle">Automatisch erkannte Hauptursachen basierend auf Log-Mustern</p>
+                    <p class="root-cause-subtitle">Automatisch erkannte Hauptursachen basierend auf Log-Mustern - Klicken Sie auf eine Karte, um die betroffenen Logs anzuzeigen</p>
                 </div>
                 <div class="root-cause-grid">
                     <template x-for="issue in rootCause.issues" :key="issue.type">
-                        <div class="root-cause-card" :class="'severity-' + issue.severity">
+                        <div class="root-cause-card" 
+                             :class="'severity-' + issue.severity"
+                             @click="filterByRootCause(issue)"
+                             :title="'Klicken um ' + issue.count + ' betroffene Logs anzuzeigen'">
                             <div class="root-cause-icon" x-text="issue.icon"></div>
                             <div class="root-cause-content">
                                 <div class="root-cause-title" x-text="issue.title"></div>
@@ -1166,7 +1190,8 @@
                             description: `${errorCodes['FileIgnored']} Dateien/Ordner können nicht synchronisiert werden, da es sich um symbolische Verknüpfungen handelt.`,
                             count: errorCodes['FileIgnored'],
                             percentage: percentage,
-                            suggestion: 'Symbolische Links sind nicht synchronisierbar. Ersetzen Sie diese durch echte Ordner oder Kopien der Dateien, oder schließen Sie diese Pfade von der Synchronisation aus.'
+                            suggestion: 'Symbolische Links sind nicht synchronisierbar. Ersetzen Sie diese durch echte Ordner oder Kopien der Dateien, oder schließen Sie diese Pfade von der Synchronisation aus.',
+                            filterCriteria: { error_code: 'FileIgnored' }
                         });
                     }
                     
@@ -1181,7 +1206,8 @@
                             description: `${httpErrors['404']} Anfragen schlugen fehl, weil Dateien auf dem Server nicht existieren.`,
                             count: httpErrors['404'],
                             percentage: percentage,
-                            suggestion: 'Dateien wurden möglicherweise auf dem Server gelöscht oder verschoben. Prüfen Sie den Server-Speicher oder synchronisieren Sie den Client neu.'
+                            suggestion: 'Dateien wurden möglicherweise auf dem Server gelöscht oder verschoben. Prüfen Sie den Server-Speicher oder synchronisieren Sie den Client neu.',
+                            filterCriteria: { search: 'HTTP status 404' }
                         });
                     }
                     
@@ -1196,7 +1222,8 @@
                             description: `${httpErrors['403']} Anfragen wurden aufgrund fehlender Berechtigungen abgelehnt.`,
                             count: httpErrors['403'],
                             percentage: percentage,
-                            suggestion: 'Überprüfen Sie die Benutzerberechtigungen auf dem Server. Möglicherweise fehlen Lese-/Schreibrechte für bestimmte Ordner.'
+                            suggestion: 'Überprüfen Sie die Benutzerberechtigungen auf dem Server. Möglicherweise fehlen Lese-/Schreibrechte für bestimmte Ordner.',
+                            filterCriteria: { search: '403' }
                         });
                     }
                     
@@ -1211,7 +1238,8 @@
                             description: `${messagePatterns['network']} Fehler stehen im Zusammenhang mit Netzwerkproblemen oder Timeouts.`,
                             count: messagePatterns['network'],
                             percentage: percentage,
-                            suggestion: 'Prüfen Sie die Internetverbindung, Firewall-Einstellungen und die Erreichbarkeit des Nextcloud-Servers. Möglicherweise ist der Server überlastet oder es gibt DNS-Probleme.'
+                            suggestion: 'Prüfen Sie die Internetverbindung, Firewall-Einstellungen und die Erreichbarkeit des Nextcloud-Servers. Möglicherweise ist der Server überlastet oder es gibt DNS-Probleme.',
+                            filterCriteria: { search: 'network' }
                         });
                     }
                     
@@ -1227,7 +1255,8 @@
                             description: `${count} Dateien haben Namen, die auf dem Server nicht erlaubt sind (z.B. Sonderzeichen, zu lang).`,
                             count: count,
                             percentage: percentage,
-                            suggestion: 'Benennen Sie die betroffenen Dateien um. Vermeiden Sie Sonderzeichen wie :, *, ?, ", <, >, | und sehr lange Dateinamen.'
+                            suggestion: 'Benennen Sie die betroffenen Dateien um. Vermeiden Sie Sonderzeichen wie :, *, ?, ", <, >, | und sehr lange Dateinamen.',
+                            filterCriteria: { search: 'invalid' }
                         });
                     }
                     
@@ -1242,7 +1271,8 @@
                             description: `${errorCodes['SyncError']} allgemeine Synchronisationsfehler wurden erkannt.`,
                             count: errorCodes['SyncError'],
                             percentage: percentage,
-                            suggestion: 'Diese Fehler können verschiedene Ursachen haben. Prüfen Sie die Detail-Logs und erwägen Sie einen Neustart des Clients oder eine Neusynchronisation.'
+                            suggestion: 'Diese Fehler können verschiedene Ursachen haben. Prüfen Sie die Detail-Logs und erwägen Sie einen Neustart des Clients oder eine Neusynchronisation.',
+                            filterCriteria: { search: 'SyncError' }
                         });
                     }
                     
@@ -1261,7 +1291,8 @@
                             description: `${objectstoreCount} Fehler beim Zugriff auf den Object Storage (S3). Dies deutet auf schwerwiegende Backend-Speicherprobleme hin.`,
                             count: objectstoreCount,
                             percentage: percentage,
-                            suggestion: 'KRITISCH: Prüfen Sie sofort die S3/ObjectStore-Verbindung, Credentials, Netzwerk und Bucket-Verfügbarkeit. Server könnte instabil sein!'
+                            suggestion: 'KRITISCH: Prüfen Sie sofort die S3/ObjectStore-Verbindung, Credentials, Netzwerk und Bucket-Verfügbarkeit. Server könnte instabil sein!',
+                            filterCriteria: { category: 'objectstore_errors' }
                         });
                     }
                     
@@ -1281,13 +1312,28 @@
                             description: `${s3_503} HTTP 503-Fehler vom S3-Storage. Der Speicher ist überlastet oder nicht erreichbar.`,
                             count: s3_503,
                             percentage: percentage,
-                            suggestion: 'Der Object Storage Service (S3) antwortet nicht. Prüfen Sie: 1) S3-Service-Status, 2) Netzwerkverbindung zum Storage, 3) Rate Limits, 4) Storage-Kapazität.'
+                            suggestion: 'Der Object Storage Service (S3) antwortet nicht. Prüfen Sie: 1) S3-Service-Status, 2) Netzwerkverbindung zum Storage, 3) Rate Limits, 4) Storage-Kapazität.',
+                            filterCriteria: { category: 's3_errors', search: '503' }
                         });
                     }
                     
                     // DAV errors (WebDAV protocol issues)
                     const davCount = this.result.categories?.dav_errors || 0;
                     if (davCount > 100) {
+                        const percentage = ((davCount / this.result.total_entries) * 100).toFixed(1);
+                        const severity = davCount > 500 ? 'high' : 'medium';
+                        issues.push({
+                            type: 'dav',
+                            severity: severity,
+                            icon: '🌐',
+                            title: 'WebDAV-Protokollfehler',
+                            description: `${davCount} WebDAV-Fehler beim Dateizugriff. Clients können nicht richtig auf Dateien zugreifen.`,
+                            count: davCount,
+                            percentage: percentage,
+                            suggestion: 'WebDAV-Fehler sind oft durch Backend-Probleme verursacht. Prüfen Sie: 1) Datei-Locks, 2) Storage-Zugriff, 3) PHP-Timeouts, 4) Apache/Nginx-Konfiguration.',
+                            filterCriteria: { category: 'dav_errors' }
+                        });
+                    }
                         const percentage = ((davCount / this.result.total_entries) * 100).toFixed(1);
                         const severity = davCount > 500 ? 'high' : 'medium';
                         issues.push({
@@ -1336,7 +1382,8 @@
                             description: description,
                             count: phpCount,
                             percentage: percentage,
-                            suggestion: suggestion
+                            suggestion: suggestion,
+                            filterCriteria: { category: 'php_errors' }
                         });
                     }
                     
@@ -1357,7 +1404,8 @@
                             description: `${storageUnavailable} "Storage Not Available"-Exceptions. Der Hauptspeicher ist nicht erreichbar!`,
                             count: storageUnavailable,
                             percentage: percentage,
-                            suggestion: 'KRITISCH: Der Primary Storage ist offline oder nicht montiert. Prüfen Sie: 1) NFS/CIFS-Mounts, 2) S3-Credentials, 3) Netzwerk-Verbindung, 4) Storage-Server-Status.'
+                            suggestion: 'KRITISCH: Der Primary Storage ist offline oder nicht montiert. Prüfen Sie: 1) NFS/CIFS-Mounts, 2) S3-Credentials, 3) Netzwerk-Verbindung, 4) Storage-Server-Status.',
+                            filterCriteria: { search: 'StorageNotAvailableException' }
                         });
                     }
                     
@@ -1377,7 +1425,8 @@
                             description: `${lockErrors} Fehler beim Sperren/Entsperren von Dateien. Dies kann zu Datenverlust führen!`,
                             count: lockErrors,
                             percentage: percentage,
-                            suggestion: 'Locking-Probleme können durch: 1) Redis/Memcached-Probleme, 2) Datenbank-Locks, 3) Tote Lock-Einträge verursacht werden. Prüfen Sie das Locking-Backend und bereinigen Sie alte Locks.'
+                            suggestion: 'Locking-Probleme können durch: 1) Redis/Memcached-Probleme, 2) Datenbank-Locks, 3) Tote Lock-Einträge verursacht werden. Prüfen Sie das Locking-Backend und bereinigen Sie alte Locks.',
+                            filterCriteria: { search: 'lock' }
                         });
                     }
                     
@@ -1386,6 +1435,69 @@
                     
                     this.rootCause.issues = issues;
                     console.log('🔍 Root Cause Analysis:', issues);
+                },
+
+                filterByRootCause(issue) {
+                    console.log('🔍 Filtering by root cause:', issue);
+                    
+                    // Clear all filters first
+                    this.filterDateFrom = '';
+                    this.filterDateTo = '';
+                    this.filterUsername = '';
+                    this.filterSearch = '';
+                    this.selectedCategory = null;
+                    this.currentPage = 1;
+                    
+                    // Apply filter based on issue type
+                    switch(issue.type) {
+                        case 'fileignored':
+                            this.filterSearch = 'FileIgnored';
+                            break;
+                        case 'http404':
+                            this.filterSearch = 'HTTP status 404';
+                            break;
+                        case 'http403':
+                            this.filterSearch = '403';
+                            break;
+                        case 'network':
+                            this.filterSearch = 'network';
+                            break;
+                        case 'invalidname':
+                            this.filterSearch = 'invalid';
+                            break;
+                        case 'syncerror':
+                            this.filterSearch = 'SyncError';
+                            break;
+                        case 'objectstore':
+                            this.selectedCategory = 'objectstore_errors';
+                            break;
+                        case 's3_503':
+                            this.selectedCategory = 's3_errors';
+                            this.filterSearch = '503';
+                            break;
+                        case 'dav':
+                            this.selectedCategory = 'dav_errors';
+                            break;
+                        case 'php':
+                            this.selectedCategory = 'php_errors';
+                            break;
+                        case 'storage_unavailable':
+                            this.filterSearch = 'StorageNotAvailableException';
+                            break;
+                        case 'locking':
+                            this.filterSearch = 'lock';
+                            break;
+                    }
+                    
+                    this.filtersApplied = true;
+                    
+                    // Scroll to entries table
+                    this.$nextTick(() => {
+                        const entriesTable = document.querySelector('.entries-container');
+                        if (entriesTable) {
+                            entriesTable.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        }
+                    });
                 },
 
                 exportJSON() {
