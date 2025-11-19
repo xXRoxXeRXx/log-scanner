@@ -149,25 +149,86 @@
 
         .loading {
             display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
-            padding: 20px;
+            padding: 30px;
             color: #667eea;
+            background: #f8f9ff;
+            border-radius: 12px;
+            margin-top: 20px;
         }
 
         .spinner {
             border: 3px solid #f3f3f3;
             border-top: 3px solid #667eea;
             border-radius: 50%;
-            width: 40px;
-            height: 40px;
+            width: 50px;
+            height: 50px;
             animation: spin 1s linear infinite;
-            margin-right: 15px;
+            margin-bottom: 20px;
         }
 
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
+        }
+
+        .loading strong {
+            font-size: 18px;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
+        /* Progress Bar Styles */
+        .progress-container {
+            width: 100%;
+            height: 30px;
+            background: #e0e7ff;
+            border-radius: 15px;
+            margin-top: 15px;
+            overflow: hidden;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: width 0.3s ease;
+            min-width: 60px; /* Ensure text is always visible */
+        }
+
+        .progress-text {
+            color: white;
+            font-weight: bold;
+            font-size: 12px;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+        }
+
+        /* Indeterminate Progress Animation */
+        .progress-bar.indeterminate {
+            width: 100% !important;
+            background: linear-gradient(90deg, 
+                #667eea 0%, 
+                #764ba2 25%, 
+                #667eea 50%, 
+                #764ba2 75%, 
+                #667eea 100%);
+            background-size: 200% 100%;
+            animation: indeterminate 2s linear infinite;
+        }
+
+        @keyframes indeterminate {
+            0% { background-position: 200% 0; }
+            100% { background-position: 0 0; }
         }
 
         .error {
@@ -249,10 +310,39 @@
             <span x-show="files.length > 0" x-text="'Analysiere ' + files.length + ' Datei(en)'"></span>
         </button>
 
-        <!-- Loading State -->
+        <!-- Loading State with Progress -->
         <div class="loading" x-show="loading">
             <div class="spinner"></div>
-            <div>Analyse läuft...</div>
+            
+            <!-- Upload Phase with Progress Bar -->
+            <div x-show="uploadStatus === 'uploading'" style="width: 100%; max-width: 400px; margin-top: 20px;">
+                <strong>📤 Upload läuft...</strong>
+                <div style="margin-top: 10px; font-size: 14px; opacity: 0.9;">
+                    Dateien werden hochgeladen
+                </div>
+                
+                <!-- Progress Bar -->
+                <div class="progress-container">
+                    <div class="progress-bar" :style="'width: ' + uploadProgress + '%'">
+                        <span class="progress-text" x-text="uploadProgress + '%'"></span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Analysis Phase with Indeterminate Progress -->
+            <div x-show="uploadStatus === 'analyzing'" style="width: 100%; max-width: 400px; margin-top: 20px;">
+                <strong>🔍 Analyse läuft...</strong>
+                <div style="margin-top: 10px; font-size: 14px; opacity: 0.9;">
+                    Log-Dateien werden verarbeitet
+                </div>
+                
+                <!-- Indeterminate Progress Bar -->
+                <div class="progress-container">
+                    <div class="progress-bar indeterminate">
+                        <span class="progress-text">Wird verarbeitet...</span>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- Error Message -->
@@ -280,6 +370,8 @@
                 files: [],
                 dragover: false,
                 loading: false,
+                uploadStatus: null, // 'uploading' or 'analyzing'
+                uploadProgress: 0, // 0-100
                 error: null,
                 success: null,
                 analysisId: null,
@@ -329,6 +421,8 @@
 
                 async analyze() {
                     this.loading = true;
+                    this.uploadStatus = 'uploading';
+                    this.uploadProgress = 0;
                     this.error = null;
                     this.success = null;
 
@@ -338,26 +432,73 @@
                             formData.append('files', file);
                         });
 
-                        const response = await fetch('/api/upload', {
-                            method: 'POST',
-                            body: formData
-                        });
-
-                        if (!response.ok) {
-                            const errorData = await response.json();
-                            throw new Error(errorData.detail || 'Upload fehlgeschlagen');
-                        }
-
-                        const result = await response.json();
+                        // Use XMLHttpRequest for progress tracking
+                        const result = await this.uploadWithProgress(formData);
+                        
                         this.analysisId = result.analysis_id;
-                        this.success = `Analyse erfolgreich! ${result.file_count} Datei(en) analysiert.`;
+                        this.success = `✅ Analyse erfolgreich! ${result.file_count} Datei(en) analysiert.`;
                         this.files = [];
 
                     } catch (err) {
                         this.error = err.message || 'Ein Fehler ist aufgetreten';
                     } finally {
                         this.loading = false;
+                        this.uploadStatus = null;
+                        this.uploadProgress = 0;
                     }
+                },
+
+                uploadWithProgress(formData) {
+                    return new Promise((resolve, reject) => {
+                        const xhr = new XMLHttpRequest();
+
+                        // Upload progress event
+                        xhr.upload.addEventListener('progress', (e) => {
+                            if (e.lengthComputable) {
+                                this.uploadProgress = Math.round((e.loaded / e.total) * 100);
+                            }
+                        });
+
+                        // Upload complete, switch to analyzing
+                        xhr.upload.addEventListener('load', () => {
+                            this.uploadProgress = 100;
+                            this.uploadStatus = 'analyzing';
+                        });
+
+                        // Request complete (response received)
+                        xhr.addEventListener('load', () => {
+                            if (xhr.status === 200) {
+                                try {
+                                    const result = JSON.parse(xhr.responseText);
+                                    resolve(result);
+                                } catch (e) {
+                                    reject(new Error('Ungültige Server-Antwort'));
+                                }
+                            } else {
+                                try {
+                                    const errorData = JSON.parse(xhr.responseText);
+                                    reject(new Error(errorData.detail || 'Upload fehlgeschlagen'));
+                                } catch (e) {
+                                    reject(new Error(`Upload fehlgeschlagen (Status: ${xhr.status})`));
+                                }
+                            }
+                        });
+
+                        // Network error
+                        xhr.addEventListener('error', () => {
+                            reject(new Error('Netzwerkfehler beim Upload'));
+                        });
+
+                        // Timeout
+                        xhr.addEventListener('timeout', () => {
+                            reject(new Error('Upload-Timeout'));
+                        });
+
+                        // Send request
+                        xhr.open('POST', '/api/upload');
+                        xhr.timeout = 300000; // 5 minutes timeout
+                        xhr.send(formData);
+                    });
                 }
             }
         }
