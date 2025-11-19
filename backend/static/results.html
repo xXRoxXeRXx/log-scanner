@@ -7,17 +7,95 @@
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.3/dist/cdn.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <style>
+        /* CSS Variables for Light/Dark Theme */
+        :root {
+            --bg-gradient-start: #667eea;
+            --bg-gradient-end: #764ba2;
+            --container-bg: #ffffff;
+            --text-primary: #333333;
+            --text-secondary: #666666;
+            --text-tertiary: #999999;
+            --border-color: #e0e0e0;
+            --shadow-sm: rgba(0, 0, 0, 0.1);
+            --shadow-md: rgba(0, 0, 0, 0.15);
+            --link-color: #667eea;
+            --link-hover: #5568d3;
+            --card-bg: #ffffff;
+            --header-bg: #f8f9fa;
+            --table-header-bg: #f8f9fa;
+            --table-border: #e0e0e0;
+            --table-hover: #f5f5f5;
+            --input-bg: #ffffff;
+            --input-border: #ddd;
+            --button-bg: #667eea;
+            --button-hover: #5568d3;
+            --danger-bg: #dc3545;
+            --danger-hover: #c82333;
+            --stat-bg: #f8f9fa;
+        }
+        
+        [data-theme="dark"] {
+            --bg-gradient-start: #1a1a2e;
+            --bg-gradient-end: #16213e;
+            --container-bg: #0f3460;
+            --text-primary: #e4e4e4;
+            --text-secondary: #b8b8b8;
+            --text-tertiary: #8a8a8a;
+            --border-color: #2a2a3e;
+            --shadow-sm: rgba(0, 0, 0, 0.3);
+            --shadow-md: rgba(0, 0, 0, 0.5);
+            --link-color: #8b9dff;
+            --link-hover: #a8b5ff;
+            --card-bg: #1a2332;
+            --header-bg: #162238;
+            --table-header-bg: #1a2840;
+            --table-border: #2a3a52;
+            --table-hover: #1f3048;
+            --input-bg: #1a2840;
+            --input-border: #2a3a52;
+            --button-bg: #5568d3;
+            --button-hover: #667eea;
+            --danger-bg: #dc3545;
+            --danger-hover: #e84e5f;
+            --stat-bg: #1a2840;
+        }
+        
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
         }
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, var(--bg-gradient-start) 0%, var(--bg-gradient-end) 100%);
             min-height: 100vh;
             padding: 20px;
+        }
+        
+        .theme-toggle {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: var(--container-bg);
+            border: 2px solid var(--border-color);
+            cursor: pointer;
+            font-size: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 12px var(--shadow-md);
+            z-index: 1000;
+            transition: all 0.3s ease;
+        }
+        
+        .theme-toggle:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 16px var(--shadow-md);
         }
 
         .container {
@@ -26,28 +104,29 @@
         }
 
         .header {
-            background: white;
+            background: var(--container-bg);
             border-radius: 16px;
             padding: 30px;
             margin-bottom: 20px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 4px 20px var(--shadow-sm);
         }
 
         h1 {
-            color: #333;
+            color: var(--text-primary);
             margin-bottom: 10px;
             font-size: 28px;
         }
 
         .back-link {
             display: inline-block;
-            color: #667eea;
+            color: var(--link-color);
             text-decoration: none;
             margin-bottom: 15px;
             font-size: 14px;
         }
 
         .back-link:hover {
+            color: var(--link-hover);
             text-decoration: underline;
         }
 
@@ -59,8 +138,9 @@
         }
 
         .stat-card {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
+            background: var(--stat-bg);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
             padding: 20px;
             border-radius: 12px;
             text-align: center;
@@ -70,6 +150,8 @@
             font-size: 32px;
             font-weight: bold;
             margin-bottom: 5px;
+            color: var(--link-color);
+        }
         }
 
         .stat-label {
@@ -381,9 +463,35 @@
         .root-cause-suggestion strong {
             color: #2d3748;
         }
+
+        /* Download Button Styles */
+        .download-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 10px 20px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .download-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
     </style>
 </head>
 <body>
+    <!-- Theme Toggle Button -->
+    <button class="theme-toggle" @click="toggleTheme()" :aria-label="darkMode ? 'Switch to light mode' : 'Switch to dark mode'">
+        <span x-text="darkMode ? '☀️' : '🌙'"></span>
+    </button>
+    
     <div class="container" x-data="resultsApp()" x-init="init()">
         <!-- Loading State -->
         <div class="loading" x-show="loading">
@@ -402,7 +510,17 @@
         <div x-show="!loading && !error && analysisId && result">
             <div class="header">
                 <a href="/" class="back-link">← Neue Analyse</a>
-                <h1>📊 Analyse-Ergebnisse</h1>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <h1>📊 Analyse-Ergebnisse</h1>
+                    <div style="display: flex; gap: 10px;">
+                        <button @click="downloadJSON()" class="download-btn" title="Als JSON exportieren">
+                            💾 JSON
+                        </button>
+                        <button @click="downloadCSV()" class="download-btn" title="Als CSV exportieren">
+                            📊 CSV
+                        </button>
+                    </div>
+                </div>
                 <p style="color: #666; font-size: 14px; margin-top: 5px;">
                     ID: <span x-text="analysisId"></span> | 
                     <span x-text="result?.timestamp"></span>
@@ -751,6 +869,7 @@
                 entriesPerPage: 100,
                 selectedEntry: null, // Track which entry's details are expanded
                 rootCause: { issues: [] }, // Root cause analysis data
+                darkMode: false, // Dark mode state
                 
                 // Filter states
                 filterDateFrom: '',
@@ -924,6 +1043,68 @@
                     return this.filterDateFrom || this.filterDateTo || this.filterUsername || this.filterSearch || this.selectedCategory;
                 },
                 
+                // Download methods
+                downloadJSON() {
+                    if (!this.result) return;
+                    
+                    const data = JSON.stringify(this.result, null, 2);
+                    const blob = new Blob([data], { type: 'application/json' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `nextcloud-analysis-${this.analysisId || 'result'}.json`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                },
+                
+                downloadCSV() {
+                    if (!this.result?.entries) return;
+                    
+                    // CSV Header
+                    const headers = ['Timestamp', 'Level', 'Category', 'Message', 'User', 'Error Code'];
+                    
+                    // Convert entries to CSV rows
+                    const rows = this.result.entries.map(entry => {
+                        return [
+                            entry.timestamp || '',
+                            entry.level || '',
+                            entry.category || '',
+                            this.escapeCsvValue(entry.message || ''),
+                            entry.user || '--',
+                            entry.error_code || ''
+                        ];
+                    });
+                    
+                    // Combine header and rows
+                    const csvContent = [
+                        headers.join(','),
+                        ...rows.map(row => row.join(','))
+                    ].join('\n');
+                    
+                    // Create download
+                    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `nextcloud-analysis-${this.analysisId || 'result'}.csv`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                },
+                
+                escapeCsvValue(value) {
+                    if (typeof value !== 'string') return value;
+                    
+                    // Escape quotes and wrap in quotes if contains comma, newline, or quote
+                    if (value.includes(',') || value.includes('\n') || value.includes('"')) {
+                        return '"' + value.replace(/"/g, '""') + '"';
+                    }
+                    return value;
+                },
+                
                 getCategoryLabel(category) {
                     const labels = {
                         's3_errors': 'S3 Errors',
@@ -938,8 +1119,21 @@
                     };
                     return labels[category] || category;
                 },
+                
+                // Dark mode toggle
+                toggleTheme() {
+                    this.darkMode = !this.darkMode;
+                    document.documentElement.setAttribute('data-theme', this.darkMode ? 'dark' : 'light');
+                    localStorage.setItem('theme', this.darkMode ? 'dark' : 'light');
+                },
 
                 async init() {
+                    // Load theme from localStorage or system preference
+                    const savedTheme = localStorage.getItem('theme');
+                    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                    this.darkMode = savedTheme === 'dark' || (!savedTheme && prefersDark);
+                    document.documentElement.setAttribute('data-theme', this.darkMode ? 'dark' : 'light');
+                    
                     // Check if we have an ID in URL
                     const params = new URLSearchParams(window.location.search);
                     this.analysisId = params.get('id');

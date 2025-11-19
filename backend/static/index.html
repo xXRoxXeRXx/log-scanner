@@ -6,6 +6,50 @@
     <title>Nextcloud Log Analyzer</title>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.3/dist/cdn.min.js"></script>
     <style>
+        /* CSS Variables for Light/Dark Mode */
+        :root {
+            --bg-gradient-start: #667eea;
+            --bg-gradient-end: #764ba2;
+            --container-bg: #ffffff;
+            --text-primary: #333333;
+            --text-secondary: #666666;
+            --text-tertiary: #999999;
+            --upload-zone-bg: #f8f9ff;
+            --upload-zone-hover: #f0f1ff;
+            --upload-zone-dragover: #e8e9ff;
+            --upload-zone-border: #667eea;
+            --file-item-bg: #f5f5f5;
+            --button-bg: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --button-hover: linear-gradient(135deg, #5568d3 0%, #63408b 100%);
+            --progress-bg: #e0e7ff;
+            --progress-fill: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            --error-bg: #ff4757;
+            --success-bg: #2ecc71;
+            --loading-bg: #f8f9ff;
+        }
+
+        /* Dark Mode Variables */
+        [data-theme="dark"] {
+            --bg-gradient-start: #1a1a2e;
+            --bg-gradient-end: #16213e;
+            --container-bg: #0f3460;
+            --text-primary: #e4e4e4;
+            --text-secondary: #b8b8b8;
+            --text-tertiary: #888888;
+            --upload-zone-bg: #1a2332;
+            --upload-zone-hover: #1f2937;
+            --upload-zone-dragover: #243042;
+            --upload-zone-border: #4a90e2;
+            --file-item-bg: #1a2332;
+            --button-bg: linear-gradient(135deg, #4a90e2 0%, #764ba2 100%);
+            --button-hover: linear-gradient(135deg, #3a7bc8 0%, #63408b 100%);
+            --progress-bg: #1a2332;
+            --progress-fill: linear-gradient(90deg, #4a90e2 0%, #764ba2 100%);
+            --error-bg: #ff4757;
+            --success-bg: #2ecc71;
+            --loading-bg: #1a2332;
+        }
+
         * {
             margin: 0;
             padding: 0;
@@ -14,73 +58,123 @@
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, var(--bg-gradient-start) 0%, var(--bg-gradient-end) 100%);
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
             padding: 20px;
+            transition: background 0.3s ease;
         }
 
         .container {
-            background: white;
+            background: var(--container-bg);
             border-radius: 16px;
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
             padding: 40px;
             max-width: 600px;
             width: 100%;
+            position: relative;
+            transition: background 0.3s ease;
+        }
+
+        /* Dark Mode Toggle Button */
+        .theme-toggle {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: var(--upload-zone-bg);
+            border: 2px solid var(--upload-zone-border);
+            border-radius: 50%;
+            width: 48px;
+            height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 24px;
+            transition: all 0.3s ease;
+            z-index: 10;
+        }
+
+        .theme-toggle:hover {
+            transform: scale(1.1);
+            background: var(--upload-zone-hover);
         }
 
         h1 {
-            color: #333;
+            color: var(--text-primary);
             margin-bottom: 10px;
             font-size: 28px;
             text-align: center;
+            transition: color 0.3s ease;
         }
 
         .subtitle {
-            color: #666;
+            color: var(--text-secondary);
             text-align: center;
             margin-bottom: 30px;
             font-size: 14px;
+            transition: color 0.3s ease;
         }
 
         .upload-zone {
-            border: 3px dashed #667eea;
+            border: 3px dashed var(--upload-zone-border);
             border-radius: 12px;
             padding: 60px 20px;
             text-align: center;
             cursor: pointer;
-            transition: all 0.3s ease;
-            background: #f8f9ff;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            background: var(--upload-zone-bg);
+            position: relative;
         }
 
         .upload-zone:hover {
-            border-color: #764ba2;
-            background: #f0f1ff;
+            border-color: var(--upload-zone-border);
+            background: var(--upload-zone-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px var(--shadow-md);
         }
 
         .upload-zone.dragover {
-            border-color: #764ba2;
-            background: #e8e9ff;
-            transform: scale(1.02);
+            border-color: var(--upload-zone-border);
+            border-width: 4px;
+            background: var(--upload-zone-dragover);
+            transform: scale(1.03);
+            box-shadow: 0 12px 30px var(--shadow-md), inset 0 0 20px rgba(102, 126, 234, 0.2);
+        }
+        
+        .upload-zone.dragover .upload-icon {
+            animation: bounce 0.6s ease-in-out infinite;
+        }
+        
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
         }
 
         .upload-icon {
             font-size: 64px;
             margin-bottom: 20px;
+            transition: transform 0.3s ease;
+        }
+        
+        .upload-zone:hover .upload-icon {
+            transform: scale(1.1);
         }
 
         .upload-text {
-            color: #333;
+            color: var(--text-primary);
             font-size: 18px;
             margin-bottom: 10px;
             font-weight: 500;
+            transition: color 0.3s ease;
         }
 
         .upload-hint {
-            color: #999;
+            color: var(--text-tertiary);
             font-size: 14px;
+            transition: color 0.3s ease;
         }
 
         .file-list {
@@ -88,25 +182,28 @@
         }
 
         .file-item {
-            background: #f5f5f5;
+            background: var(--file-item-bg);
             padding: 12px;
             border-radius: 8px;
             margin-bottom: 8px;
             display: flex;
             align-items: center;
             justify-content: space-between;
+            transition: background 0.3s ease;
         }
 
         .file-name {
-            color: #333;
+            color: var(--text-primary);
             font-size: 14px;
             flex: 1;
+            transition: color 0.3s ease;
         }
 
         .file-size {
-            color: #999;
+            color: var(--text-tertiary);
             font-size: 12px;
             margin-left: 10px;
+            transition: color 0.3s ease;
         }
 
         .remove-btn {
@@ -124,7 +221,7 @@
         }
 
         .analyze-btn {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: var(--button-bg);
             color: white;
             border: none;
             border-radius: 8px;
@@ -134,10 +231,11 @@
             cursor: pointer;
             width: 100%;
             margin-top: 20px;
-            transition: transform 0.2s ease;
+            transition: all 0.3s ease;
         }
 
         .analyze-btn:hover {
+            background: var(--button-hover);
             transform: translateY(-2px);
         }
 
@@ -153,15 +251,16 @@
             align-items: center;
             justify-content: center;
             padding: 30px;
-            color: #667eea;
-            background: #f8f9ff;
+            color: var(--upload-zone-border);
+            background: var(--loading-bg);
             border-radius: 12px;
             margin-top: 20px;
+            transition: all 0.3s ease;
         }
 
         .spinner {
-            border: 3px solid #f3f3f3;
-            border-top: 3px solid #667eea;
+            border: 3px solid var(--upload-zone-bg);
+            border-top: 3px solid var(--upload-zone-border);
             border-radius: 50%;
             width: 50px;
             height: 50px;
@@ -188,16 +287,17 @@
         .progress-container {
             width: 100%;
             height: 30px;
-            background: #e0e7ff;
+            background: var(--progress-bg);
             border-radius: 15px;
             margin-top: 15px;
             overflow: hidden;
             box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+            transition: background 0.3s ease;
         }
 
         .progress-bar {
             height: 100%;
-            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            background: var(--progress-fill);
             border-radius: 15px;
             display: flex;
             align-items: center;
@@ -267,20 +367,29 @@
 </head>
 <body>
     <div class="container" x-data="uploadApp()">
+        <!-- Dark Mode Toggle -->
+        <button class="theme-toggle" @click="toggleTheme()" :title="darkMode ? 'Light Mode' : 'Dark Mode'">
+            <span x-show="!darkMode">🌙</span>
+            <span x-show="darkMode">☀️</span>
+        </button>
+
         <h1>🔍 Nextcloud Log Analyzer</h1>
         <p class="subtitle">Upload .log, .gz oder .zip Dateien für Analyse</p>
 
         <!-- Upload Zone -->
         <div class="upload-zone"
              @click="$refs.fileInput.click()"
-             @dragover.prevent="dragover = true"
-             @dragleave.prevent="dragover = false"
+             @dragover.prevent="handleDragOver($event)"
+             @dragleave.prevent="handleDragLeave()"
              @drop.prevent="handleDrop($event)"
              :class="{ 'dragover': dragover }">
             
-            <div class="upload-icon">📁</div>
-            <div class="upload-text">Dateien hier ablegen oder klicken</div>
-            <div class="upload-hint">Unterstützt: .log, .txt, .gz, .zip (max 2GB pro Datei)</div>
+            <div class="upload-icon">
+                <span x-show="!dragover">📁</span>
+                <span x-show="dragover" x-text="dragFileCount > 0 ? '📦' + dragFileCount : '📦'"></span>
+            </div>
+            <div class="upload-text" x-text="dragover ? (dragFileCount > 0 ? dragFileCount + ' Datei(en) ablegen' : 'Dateien ablegen') : 'Dateien hier ablegen oder klicken'"></div>
+            <div class="upload-hint" x-show="!dragover">Unterstützt: .log, .txt, .gz, .zip (max 2GB pro Datei)</div>
             
             <input type="file"
                    x-ref="fileInput"
@@ -369,12 +478,34 @@
             return {
                 files: [],
                 dragover: false,
+                dragFileCount: 0, // Track number of files being dragged
                 loading: false,
                 uploadStatus: null, // 'uploading' or 'analyzing'
                 uploadProgress: 0, // 0-100
                 error: null,
                 success: null,
                 analysisId: null,
+                darkMode: false,
+
+                init() {
+                    // Load dark mode preference from localStorage
+                    const savedTheme = localStorage.getItem('theme');
+                    if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                        this.darkMode = true;
+                        document.documentElement.setAttribute('data-theme', 'dark');
+                    }
+                },
+
+                toggleTheme() {
+                    this.darkMode = !this.darkMode;
+                    if (this.darkMode) {
+                        document.documentElement.setAttribute('data-theme', 'dark');
+                        localStorage.setItem('theme', 'dark');
+                    } else {
+                        document.documentElement.removeAttribute('data-theme');
+                        localStorage.setItem('theme', 'light');
+                    }
+                },
 
                 handleFiles(event) {
                     const newFiles = Array.from(event.target.files);
@@ -383,8 +514,23 @@
 
                 handleDrop(event) {
                     this.dragover = false;
+                    this.dragFileCount = 0;
                     const newFiles = Array.from(event.dataTransfer.files);
                     this.addFiles(newFiles);
+                },
+                
+                handleDragOver(event) {
+                    event.preventDefault();
+                    this.dragover = true;
+                    // Try to get file count from drag event
+                    if (event.dataTransfer.items) {
+                        this.dragFileCount = event.dataTransfer.items.length;
+                    }
+                },
+                
+                handleDragLeave() {
+                    this.dragover = false;
+                    this.dragFileCount = 0;
                 },
 
                 addFiles(newFiles) {
