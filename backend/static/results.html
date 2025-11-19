@@ -1,0 +1,1602 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analyse-Ergebnisse - Nextcloud Log Analyzer</title>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.3/dist/cdn.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+
+        .back-link {
+            display: inline-block;
+            color: #667eea;
+            text-decoration: none;
+            margin-bottom: 15px;
+            font-size: 14px;
+        }
+
+        .back-link:hover {
+            text-decoration: underline;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 32px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .chart-container {
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .chart-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        .entries-container {
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .entries-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        .entries-table th {
+            background: #f8f9fa;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            color: #333;
+            border-bottom: 2px solid #dee2e6;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .entries-table td {
+            padding: 12px;
+            border-bottom: 1px solid #dee2e6;
+            font-size: 14px;
+            color: #666;
+        }
+
+        .entries-table td:first-child {
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            white-space: nowrap;
+            color: #495057;
+        }
+
+        .entries-table td:nth-child(3) {
+            max-width: 500px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .entries-table tr:hover {
+            background: #f8f9fa;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .badge-error {
+            background: #ff4757;
+            color: white;
+        }
+
+        .badge-warning {
+            background: #ffa502;
+            color: white;
+        }
+
+        .badge-info {
+            background: #3742fa;
+            color: white;
+        }
+
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 100px 20px;
+            color: white;
+            font-size: 18px;
+        }
+
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid white;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin-right: 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error {
+            background: white;
+            border-radius: 16px;
+            padding: 40px;
+            text-align: center;
+            color: #ff4757;
+        }
+
+        .history-list {
+            list-style: none;
+        }
+
+        .history-item {
+            background: #f8f9fa;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .history-item:hover {
+            background: #e9ecef;
+            cursor: pointer;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-danger {
+            background: #ff4757;
+            color: white;
+        }
+
+        .btn:hover {
+            opacity: 0.9;
+        }
+
+        .actions {
+            margin-top: 20px;
+            display: flex;
+            gap: 10px;
+        }
+
+        /* Root Cause Analysis Styles */
+        .root-cause-container {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .root-cause-header h3 {
+            margin: 0 0 5px 0;
+            color: #2d3748;
+            font-size: 22px;
+        }
+
+        .root-cause-subtitle {
+            margin: 0 0 20px 0;
+            color: #718096;
+            font-size: 14px;
+        }
+
+        .root-cause-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 15px;
+        }
+
+        .root-cause-card {
+            border-radius: 10px;
+            padding: 20px;
+            display: flex;
+            gap: 15px;
+            border-left: 4px solid;
+            transition: transform 0.2s, box-shadow 0.2s;
+            cursor: pointer;
+        }
+
+        .root-cause-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .root-cause-card:active {
+            transform: translateY(0);
+        }
+
+        .severity-critical {
+            background: #fff5f5;
+            border-left-color: #e53e3e;
+        }
+
+        .severity-critical:hover {
+            background: #fed7d7;
+        }
+
+        .severity-high {
+            background: #fffaf0;
+            border-left-color: #ed8936;
+        }
+
+        .severity-high:hover {
+            background: #feebc8;
+        }
+
+        .severity-medium {
+            background: #fffff0;
+            border-left-color: #ecc94b;
+        }
+
+        .severity-medium:hover {
+            background: #fefcbf;
+        }
+
+        .severity-low {
+            background: #f0f9ff;
+            border-left-color: #4299e1;
+        }
+
+        .severity-low:hover {
+            background: #bee3f8;
+        }
+
+        .root-cause-icon {
+            font-size: 32px;
+            line-height: 1;
+            flex-shrink: 0;
+        }
+
+        .root-cause-content {
+            flex: 1;
+        }
+
+        .root-cause-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: #2d3748;
+            margin-bottom: 5px;
+        }
+
+        .root-cause-description {
+            font-size: 14px;
+            color: #4a5568;
+            margin-bottom: 10px;
+            line-height: 1.5;
+        }
+
+        .root-cause-stats {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .root-cause-count {
+            font-size: 13px;
+            font-weight: 600;
+            color: #2d3748;
+        }
+
+        .root-cause-percent {
+            font-size: 13px;
+            color: #718096;
+        }
+
+        .root-cause-suggestion {
+            font-size: 13px;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.7);
+            border-radius: 6px;
+            line-height: 1.5;
+        }
+
+        .root-cause-suggestion strong {
+            color: #2d3748;
+        }
+    </style>
+</head>
+<body>
+    <div class="container" x-data="resultsApp()" x-init="init()">
+        <!-- Loading State -->
+        <div class="loading" x-show="loading">
+            <div class="spinner"></div>
+            <div>Lade Ergebnisse...</div>
+        </div>
+
+        <!-- Error State -->
+        <div class="error" x-show="error && !loading">
+            <h2>❌ Fehler</h2>
+            <p x-text="error"></p>
+            <a href="/" class="btn btn-primary" style="margin-top: 20px;">← Zurück zur Startseite</a>
+        </div>
+
+        <!-- Results View (Single Analysis) -->
+        <div x-show="!loading && !error && analysisId && result">
+            <div class="header">
+                <a href="/" class="back-link">← Neue Analyse</a>
+                <h1>📊 Analyse-Ergebnisse</h1>
+                <p style="color: #666; font-size: 14px; margin-top: 5px;">
+                    ID: <span x-text="analysisId"></span> | 
+                    <span x-text="result?.timestamp"></span>
+                </p>
+
+                <!-- Stats Grid -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-value" x-text="result?.file_count || 0"></div>
+                        <div class="stat-label">Dateien</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" x-text="result?.total_entries || 0"></div>
+                        <div class="stat-label">Gesamt Einträge</div>
+                    </div>
+                    
+                    <!-- Dynamic category cards - only show if > 0 -->
+                    <template x-for="[category, count] in Object.entries(result?.categories || {}).filter(([k,v]) => v > 0)" :key="category">
+                        <div class="stat-card">
+                            <div class="stat-value" x-text="count"></div>
+                            <div class="stat-label" x-text="getCategoryLabel(category)"></div>
+                        </div>
+                    </template>
+                </div>
+
+                <div class="actions">
+                    <button @click="exportJSON()" class="btn btn-primary">📥 JSON Export</button>
+                    <button @click="deleteAnalysis()" class="btn btn-danger">🗑️ Löschen</button>
+                </div>
+            </div>
+
+            <!-- Root Cause Analysis -->
+            <div x-show="rootCause.issues.length > 0" class="root-cause-container" style="display: none;">
+                <div class="root-cause-header">
+                    <h3>🔍 Root Cause Analyse</h3>
+                    <p class="root-cause-subtitle">Automatisch erkannte Hauptursachen basierend auf Log-Mustern - Klicken Sie auf eine Karte, um die betroffenen Logs anzuzeigen</p>
+                </div>
+                <div class="root-cause-grid">
+                    <template x-for="issue in rootCause.issues" :key="issue.type">
+                        <div class="root-cause-card" 
+                             :class="'severity-' + issue.severity"
+                             @click="filterByRootCause(issue)"
+                             :title="'Klicken um ' + issue.count + ' betroffene Logs anzuzeigen'">
+                            <div class="root-cause-icon" x-text="issue.icon"></div>
+                            <div class="root-cause-content">
+                                <div class="root-cause-title" x-text="issue.title"></div>
+                                <div class="root-cause-description" x-text="issue.description"></div>
+                                <div class="root-cause-stats">
+                                    <span class="root-cause-count" x-text="issue.count + ' Vorkommen'"></span>
+                                    <span class="root-cause-percent" x-text="'(' + issue.percentage + '%)'"></span>
+                                </div>
+                                <div class="root-cause-suggestion" x-show="issue.suggestion">
+                                    <strong>Lösung:</strong> <span x-text="issue.suggestion"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </div>
+
+            <!-- Charts -->
+            <div class="chart-container">
+                <div class="chart-title">Kategorien-Übersicht <span style="font-size: 14px; color: #999; font-weight: normal;">(Klicken zum Filtern)</span></div>
+                <div style="position: relative; height: 400px; width: 100%;">
+                    <canvas id="categoriesChart" style="cursor: pointer;"></canvas></canvas>
+                </div>
+            </div>
+
+            <!-- Log Entries Table -->
+            <div class="entries-container">
+                <!-- Filter Section -->
+                <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                    <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
+                        <!-- Date From -->
+                        <div>
+                            <label style="font-size: 12px; color: #666; display: block; margin-bottom: 5px;">Von Datum:</label>
+                            <input type="date" x-model="filterDateFrom" 
+                                   style="padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
+                        </div>
+                        
+                        <!-- Date To -->
+                        <div>
+                            <label style="font-size: 12px; color: #666; display: block; margin-bottom: 5px;">Bis Datum:</label>
+                            <input type="date" x-model="filterDateTo" 
+                                   style="padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
+                        </div>
+                        
+                        <!-- Username Filter -->
+                        <div>
+                            <label style="font-size: 12px; color: #666; display: block; margin-bottom: 5px;">Username:</label>
+                            <select x-model="filterUsername" 
+                                    style="padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; width: 200px; cursor: pointer;">
+                                <option value="">Alle</option>
+                                <template x-for="user in availableUsers" :key="user">
+                                    <option :value="user" x-text="user"></option>
+                                </template>
+                            </select>
+                        </div>
+                        
+                        <!-- Search Filter -->
+                        <div>
+                            <label style="font-size: 12px; color: #666; display: block; margin-bottom: 5px;">Suche:</label>
+                            <input type="text" x-model="filterSearch" placeholder="Dateiname, Nachricht, etc..."
+                                   style="padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; width: 250px;">
+                        </div>
+                        
+                        <!-- Filter Buttons -->
+                        <div style="display: flex; gap: 10px; align-items: flex-end;">
+                            <button @click="applyFilters()" class="btn" style="background: #667eea; color: white; padding: 8px 16px;">
+                                ✓ Filter anwenden
+                            </button>
+                            <button @click="resetAllFilters()" class="btn" style="background: #f56565; color: white; padding: 8px 16px;">
+                                ✗ Zurücksetzen
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Active Filters Display -->
+                    <div x-show="hasActiveFilters()" style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #ddd;">
+                        <div style="font-size: 12px; color: #666;">
+                            <strong>Aktive Filter:</strong>
+                            <span x-show="filterDateFrom" style="margin-left: 10px;">
+                                📅 Von: <strong x-text="filterDateFrom"></strong>
+                            </span>
+                            <span x-show="filterDateTo" style="margin-left: 10px;">
+                                📅 Bis: <strong x-text="filterDateTo"></strong>
+                            </span>
+                            <span x-show="filterUsername" style="margin-left: 10px;">
+                                👤 User: <strong x-text="filterUsername"></strong>
+                            </span>
+                            <span x-show="filterSearch" style="margin-left: 10px;">
+                                🔍 Suche: <strong x-text="filterSearch"></strong>
+                            </span>
+                            <span x-show="selectedCategory" style="margin-left: 10px;">
+                                📂 Kategorie: <strong x-text="selectedCategory"></strong>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
+                    <div>
+                        <div class="chart-title" style="margin: 0;">Log-Einträge</div>
+                        <div style="font-size: 14px; color: #666; margin-top: 5px;">
+                            Zeige <span x-text="Math.min((currentPage - 1) * entriesPerPage + 1, filteredEntries.length)"></span> 
+                            bis <span x-text="Math.min(currentPage * entriesPerPage, filteredEntries.length)"></span> 
+                            von <span x-text="filteredEntries.length"></span> Einträgen
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                        <button x-show="selectedCategory" 
+                                @click="selectedCategory = null; currentPage = 1;" 
+                                class="btn" 
+                                style="padding: 5px 10px; font-size: 12px; background: #ff4757; color: white;">
+                            ✕ Filter entfernen
+                        </button>
+                    </div>
+                </div>
+                
+                <div x-show="!filteredEntries || filteredEntries?.length === 0">
+                    <p style="color: #999; text-align: center; padding: 40px;">
+                        <span x-show="!selectedCategory">Keine Einträge gefunden.</span>
+                        <span x-show="selectedCategory">Keine Einträge in dieser Kategorie gefunden.</span>
+                    </p>
+                </div>
+
+                <table class="entries-table" x-show="filteredEntries?.length > 0" style="table-layout: fixed; width: 100%;">
+                    <thead>
+                        <tr>
+                            <th style="width: 180px;">Zeit</th>
+                            <th style="width: 100px;">Typ</th>
+                            <th style="width: 120px;">Error Code</th>
+                            <th style="width: auto;">Nachricht</th>
+                            <th style="width: 150px;">Kategorie</th>
+                            <th style="width: 80px;">Details</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <template x-for="(entry, index) in paginatedEntries" :key="entry.time + '_' + index">
+                            <tr>
+                                <!-- Main Row Content in a single TR with nested table for details -->
+                                <td colspan="6" style="padding: 0;">
+                                    <table style="width: 100%; border-collapse: collapse; table-layout: fixed;">
+                                        <colgroup>
+                                            <col style="width: 180px;">
+                                            <col style="width: 100px;">
+                                            <col style="width: 120px;">
+                                            <col style="width: auto;">
+                                            <col style="width: 150px;">
+                                            <col style="width: 80px;">
+                                        </colgroup>
+                                        <tr style="cursor: pointer;" @click="selectedEntry = (selectedEntry === entry ? null : entry)">
+                                            <td x-text="entry.time" style="font-size: 12px; padding: 12px 8px 12px 8px; border-bottom: 1px solid #e2e8f0;"></td>
+                                            <td style="padding: 12px 8px 12px 18px; border-bottom: 1px solid #e2e8f0;">
+                                                <span class="badge"
+                                                      :class="{
+                                                          'badge-error': entry.type === 'ERROR',
+                                                          'badge-warning': entry.type === 'WARNING',
+                                                          'badge-info': entry.type === 'INFO'
+                                                      }"
+                                                      x-text="entry.type"></span>
+                                            </td>
+                                            <td style="padding: 12px 8px 12px 18px; border-bottom: 1px solid #e2e8f0;">
+                                                <span class="badge" 
+                                                      :class="entry.error_code ? 'badge-error' : ''"
+                                                      style="font-family: monospace; font-size: 11px;"
+                                                      x-text="entry.error_code || '-'"></span>
+                                            </td>
+                                            <td style="padding: 12px 18px 12px 18px; border-bottom: 1px solid #e2e8f0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                                <span :title="entry.message" x-text="entry.message"></span>
+                                            </td>
+                                            <td style="padding: 12px 8px 12px 18px; border-bottom: 1px solid #e2e8f0;">
+                                                <span class="badge badge-info" 
+                                                      :style="selectedCategory === entry.category ? 'background: #667eea; font-weight: bold;' : ''"
+                                                      x-text="entry.category"></span>
+                                            </td>
+                                            <td style="padding: 12px 8px; border-bottom: 1px solid #e2e8f0; text-align: center;">
+                                                <button class="btn" style="padding: 4px 8px; font-size: 12px; background: #667eea; color: white;" @click.stop="selectedEntry = (selectedEntry === entry ? null : entry)">
+                                                    <span x-show="selectedEntry !== entry">👁️</span>
+                                                    <span x-show="selectedEntry === entry">✕</span>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                        
+                                        <!-- Detail Row - shown/hidden with x-show -->
+                                        <tr x-show="selectedEntry === entry" style="background: #f8f9fa;">
+                                            <td colspan="6" style="padding: 20px;">
+                                                <div style="background: white; padding: 15px; border-radius: 8px; border: 2px solid #667eea;">
+                                                    <h4 style="margin: 0 0 15px 0; color: #667eea;">📋 Details</h4>
+                                                    <div style="display: grid; grid-template-columns: auto 1fr; gap: 10px; font-size: 14px;">
+                                                        <strong>Zeit:</strong>
+                                                        <span x-text="entry.time"></span>
+                                                        
+                                                        <strong>Typ:</strong>
+                                                        <span x-text="entry.type"></span>
+                                                        
+                                                        <strong>Error Code:</strong>
+                                                        <span x-text="entry.error_code || 'Kein Error Code'"></span>
+                                                        
+                                                        <strong>Kategorie:</strong>
+                                                        <span x-text="entry.category"></span>
+                                                        
+                                                        <strong>Datei:</strong>
+                                                        <span x-text="entry.source_file || 'Unbekannt'"></span>
+                                                        
+                                                        <strong>Zeilennummer:</strong>
+                                                        <span x-text="entry.line_number || '-'"></span>
+                                                        
+                                                        <strong>Nachricht:</strong>
+                                                        <span x-text="entry.message" style="word-break: break-word;"></span>
+                                                        
+                                                        <strong>Rohe Logzeile:</strong>
+                                                        <pre x-text="entry.raw_line || 'Nicht verfügbar'" 
+                                                             style="background: #2d3436; color: #dfe6e9; padding: 10px; border-radius: 4px; overflow-x: auto; margin: 0; font-size: 12px; font-family: 'Courier New', monospace;"></pre>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+
+                <!-- Pagination -->
+                <div x-show="filteredEntries.length > 0 && totalPages > 1" 
+                     style="display: flex; justify-content: center; align-items: center; gap: 10px; margin-top: 20px; flex-wrap: wrap;">
+                    <button @click="previousPage()" 
+                            :disabled="currentPage === 1"
+                            class="btn btn-primary" 
+                            style="padding: 8px 16px; opacity: currentPage === 1 ? 0.5 : 1;">
+                        ← Zurück
+                    </button>
+                    
+                    <div style="display: flex; gap: 5px; flex-wrap: wrap;">
+                        <template x-for="page in totalPages > 10 ? [1, 2, '...', currentPage - 1, currentPage, currentPage + 1, '...', totalPages - 1, totalPages].filter((p, i, arr) => p > 0 && p <= totalPages && arr.indexOf(p) === i) : Array.from({length: totalPages}, (_, i) => i + 1)" :key="page">
+                            <button x-show="page !== '...'" 
+                                    @click="goToPage(page)" 
+                                    :class="currentPage === page ? 'btn-primary' : 'btn'"
+                                    class="btn" 
+                                    style="padding: 8px 12px; min-width: 40px;"
+                                    :style="currentPage === page ? 'background: #667eea; color: white;' : 'background: white; color: #333;'">
+                                <span x-text="page"></span>
+                            </button>
+                            <span x-show="page === '...'" style="padding: 8px 12px;">...</span>
+                        </template>
+                    </div>
+                    
+                    <button @click="nextPage()" 
+                            :disabled="currentPage === totalPages"
+                            class="btn btn-primary" 
+                            style="padding: 8px 16px; opacity: currentPage === totalPages ? 0.5 : 1;">
+                        Weiter →
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- History View (List All) -->
+        <div x-show="!loading && !error && !analysisId && historyList">
+            <div class="header">
+                <a href="/" class="back-link">← Neue Analyse</a>
+                <h1>📚 Analyse-Historie</h1>
+                <p style="color: #666; font-size: 14px; margin-top: 5px;">
+                    <span x-text="historyList?.length || 0"></span> gespeicherte Analysen
+                </p>
+            </div>
+
+            <div class="entries-container">
+                <ul class="history-list">
+                    <template x-for="item in historyList" :key="item.id">
+                        <li class="history-item" @click="window.location.href = '/results.html?id=' + item.id">
+                            <div>
+                                <strong x-text="item.timestamp"></strong>
+                                <div style="font-size: 14px; color: #666; margin-top: 5px;">
+                                    <span x-text="item.file_count"></span> Dateien | 
+                                    <span x-text="item.total_entries"></span> Einträge
+                                </div>
+                            </div>
+                            <span class="badge badge-info" x-text="item.status"></span>
+                        </li>
+                    </template>
+                </ul>
+
+                <div x-show="!historyList || historyList.length === 0" style="text-align: center; padding: 40px; color: #999;">
+                    Keine Analysen vorhanden
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Store chart instance outside Alpine.js to avoid reactivity issues
+        let chartInstance = null;
+
+        function resultsApp() {
+            return {
+                loading: true,
+                error: null,
+                analysisId: null,
+                result: null,
+                historyList: null,
+                selectedCategory: null,
+                currentPage: 1,
+                entriesPerPage: 100,
+                selectedEntry: null, // Track which entry's details are expanded
+                rootCause: { issues: [] }, // Root cause analysis data
+                
+                // Filter states
+                filterDateFrom: '',
+                filterDateTo: '',
+                filterUsername: '',
+                filterSearch: '',
+                filtersApplied: false,
+                
+                // Computed property for available users
+                get availableUsers() {
+                    if (!this.result?.entries) return [];
+                    
+                    const users = new Set();
+                    
+                    this.result.entries.forEach(entry => {
+                        // Method 1: Check if entry has a 'user' field (parsed from JSON logs)
+                        if (entry.user && entry.user.trim() && entry.user !== '' && entry.user !== '--') {
+                            users.add(entry.user.trim());
+                        }
+                        
+                        // Method 2: Extract from raw_line if it's JSON
+                        if (entry.raw_line) {
+                            try {
+                                const json = JSON.parse(entry.raw_line);
+                                if (json.user && json.user.trim() && json.user !== '' && json.user !== '--') {
+                                    users.add(json.user.trim());
+                                }
+                            } catch (e) {
+                                // Not JSON, try pattern matching
+                                const patterns = [
+                                    /\/remote\.php\/dav\/files\/([a-zA-Z0-9_.-]+)/,
+                                    /\/files\/([a-zA-Z0-9_.-]+)\//,
+                                ];
+                                
+                                for (const pattern of patterns) {
+                                    const match = entry.raw_line.match(pattern);
+                                    if (match && match[1]) {
+                                        users.add(match[1]);
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    });
+                    
+                    const userArray = Array.from(users)
+                        .filter(u => u.length >= 3 && u.length <= 50) // Reasonable username length
+                        .sort();
+                    
+                    console.log('Extracted users:', userArray);
+                    return userArray;
+                },
+
+                // Computed property for filtered entries
+                get filteredEntries() {
+                    if (!this.result?.entries) return [];
+                    
+                    let filtered = this.result.entries;
+                    
+                    // Category filter
+                    if (this.selectedCategory) {
+                        filtered = filtered.filter(entry => entry.category === this.selectedCategory);
+                    }
+                    
+                    // Date filters (only if applied)
+                    if (this.filtersApplied) {
+                        if (this.filterDateFrom) {
+                            const fromDate = new Date(this.filterDateFrom);
+                            filtered = filtered.filter(entry => {
+                                const entryDate = new Date(entry.time);
+                                return entryDate >= fromDate;
+                            });
+                        }
+                        
+                        if (this.filterDateTo) {
+                            const toDate = new Date(this.filterDateTo);
+                            toDate.setHours(23, 59, 59, 999); // Include entire day
+                            filtered = filtered.filter(entry => {
+                                const entryDate = new Date(entry.time);
+                                return entryDate <= toDate;
+                            });
+                        }
+                        
+                        // Username filter
+                        if (this.filterUsername) {
+                            const username = this.filterUsername.toLowerCase();
+                            filtered = filtered.filter(entry => {
+                                return entry.message?.toLowerCase().includes(username) ||
+                                       entry.raw_line?.toLowerCase().includes(username);
+                            });
+                        }
+                        
+                        // Search filter (searches in multiple fields)
+                        if (this.filterSearch) {
+                            const search = this.filterSearch.toLowerCase();
+                            filtered = filtered.filter(entry => {
+                                return entry.message?.toLowerCase().includes(search) ||
+                                       entry.source_file?.toLowerCase().includes(search) ||
+                                       entry.raw_line?.toLowerCase().includes(search) ||
+                                       entry.error_code?.toLowerCase().includes(search) ||
+                                       entry.category?.toLowerCase().includes(search) ||
+                                       entry.type?.toLowerCase().includes(search);
+                            });
+                        }
+                    }
+                    
+                    return filtered;
+                },
+
+                // Computed property for paginated entries
+                get paginatedEntries() {
+                    const start = (this.currentPage - 1) * this.entriesPerPage;
+                    const end = start + this.entriesPerPage;
+                    return this.filteredEntries.slice(start, end);
+                },
+
+                // Computed property for total pages
+                get totalPages() {
+                    return Math.ceil(this.filteredEntries.length / this.entriesPerPage);
+                },
+
+                nextPage() {
+                    if (this.currentPage < this.totalPages) {
+                        this.currentPage++;
+                        this.scrollToTable();
+                    }
+                },
+
+                previousPage() {
+                    if (this.currentPage > 1) {
+                        this.currentPage--;
+                        this.scrollToTable();
+                    }
+                },
+
+                goToPage(page) {
+                    this.currentPage = page;
+                    this.scrollToTable();
+                },
+
+                scrollToTable() {
+                    document.querySelector('.entries-table')?.scrollIntoView({ 
+                        behavior: 'smooth', 
+                        block: 'start' 
+                    });
+                },
+                
+                // Filter methods
+                applyFilters() {
+                    this.filtersApplied = true;
+                    this.currentPage = 1; // Reset to first page
+                    console.log('Filters applied:', {
+                        dateFrom: this.filterDateFrom,
+                        dateTo: this.filterDateTo,
+                        username: this.filterUsername,
+                        search: this.filterSearch
+                    });
+                },
+                
+                resetAllFilters() {
+                    this.filterDateFrom = '';
+                    this.filterDateTo = '';
+                    this.filterUsername = '';
+                    this.filterSearch = '';
+                    this.selectedCategory = null;
+                    this.filtersApplied = false;
+                    this.currentPage = 1;
+                },
+                
+                hasActiveFilters() {
+                    return this.filterDateFrom || this.filterDateTo || this.filterUsername || this.filterSearch || this.selectedCategory;
+                },
+                
+                getCategoryLabel(category) {
+                    const labels = {
+                        's3_errors': 'S3 Errors',
+                        'dav_errors': 'DAV Errors',
+                        'objectstore_errors': 'ObjectStore Errors',
+                        'php_errors': 'PHP Errors',
+                        'other_errors': 'Andere Errors',
+                        'server_warnings': 'Server Warnings',
+                        'server_info': 'Server Info',
+                        'client_errors': 'Client Errors',
+                        'client_events': 'Client Events'
+                    };
+                    return labels[category] || category;
+                },
+
+                async init() {
+                    // Check if we have an ID in URL
+                    const params = new URLSearchParams(window.location.search);
+                    this.analysisId = params.get('id');
+
+                    if (this.analysisId) {
+                        await this.loadResult(this.analysisId);
+                    } else {
+                        await this.loadHistory();
+                    }
+                },
+
+                async loadResult(id) {
+                    try {
+                        const response = await fetch(`/api/results/${id}`);
+                        
+                        if (!response.ok) {
+                            throw new Error('Analyse nicht gefunden');
+                        }
+
+                        this.result = await response.json();
+                        
+                        console.log('📊 Loaded result:', this.result);
+                        console.log('📝 Entries count:', this.result?.entries?.length);
+                        console.log('📝 First entry:', this.result?.entries?.[0]);
+                        
+                        // Perform root cause analysis
+                        this.analyzeRootCause();
+                        
+                        // Wait for Alpine to render, then create chart with additional delay
+                        this.$nextTick(() => {
+                            setTimeout(() => {
+                                this.createChart();
+                            }, 100);
+                        });
+
+                    } catch (err) {
+                        console.error('❌ Error loading result:', err);
+                        this.error = err.message || 'Fehler beim Laden der Ergebnisse';
+                    } finally {
+                        this.loading = false;
+                    }
+                },
+
+                async loadHistory() {
+                    try {
+                        const response = await fetch('/api/results');
+                        
+                        if (!response.ok) {
+                            throw new Error('Fehler beim Laden der Historie');
+                        }
+
+                        const data = await response.json();
+                        this.historyList = data.results;
+
+                    } catch (err) {
+                        this.error = err.message || 'Fehler beim Laden der Historie';
+                    } finally {
+                        this.loading = false;
+                    }
+                },
+
+                createChart() {
+                    try {
+                        if (!this.result?.categories) {
+                            return;
+                        }
+
+                        const ctx = document.getElementById('categoriesChart');
+                        if (!ctx) {
+                            return;
+                        }
+
+                        // Check if Chart is available
+                        if (typeof Chart === 'undefined') {
+                            console.error('Chart.js not available');
+                            return;
+                        }
+
+                        const categories = this.result.categories;
+                        
+                        // Filter out categories with 0 entries
+                        const filteredCategories = Object.entries(categories)
+                            .filter(([key, value]) => value > 0);
+                        
+                        // If no categories have entries, don't show chart
+                        if (filteredCategories.length === 0) {
+                            console.log('No categories with entries to display');
+                            return;
+                        }
+                        
+                        const labels = filteredCategories.map(([key, value]) => key);
+                        const data = filteredCategories.map(([key, value]) => value);
+
+                        if (chartInstance) {
+                            chartInstance.destroy();
+                            chartInstance = null;
+                        }
+
+                    chartInstance = new Chart(ctx, {
+                        type: 'bar',
+                        data: {
+                            labels: labels,
+                            datasets: [{
+                                label: 'Anzahl',
+                                data: data,
+                                backgroundColor: [
+                                    'rgba(255, 99, 132, 0.7)',
+                                    'rgba(54, 162, 235, 0.7)',
+                                    'rgba(255, 206, 86, 0.7)',
+                                    'rgba(75, 192, 192, 0.7)',
+                                    'rgba(153, 102, 255, 0.7)',
+                                    'rgba(255, 159, 64, 0.7)',
+                                    'rgba(255, 99, 132, 0.7)',
+                                    'rgba(54, 162, 235, 0.7)'
+                                ],
+                                borderColor: [
+                                    'rgba(255, 99, 132, 1)',
+                                    'rgba(54, 162, 235, 1)',
+                                    'rgba(255, 206, 86, 1)',
+                                    'rgba(75, 192, 192, 1)',
+                                    'rgba(153, 102, 255, 1)',
+                                    'rgba(255, 159, 64, 1)',
+                                    'rgba(255, 99, 132, 1)',
+                                    'rgba(54, 162, 235, 1)'
+                                ],
+                                borderWidth: 2
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            animation: {
+                                duration: 1000
+                            },
+                            onClick: (event, activeElements) => {
+                                if (activeElements.length > 0) {
+                                    const index = activeElements[0].index;
+                                    const category = labels[index];
+                                    this.selectedCategory = category;
+                                    this.currentPage = 1; // Reset to first page when filtering
+                                    // Scroll to table
+                                    document.querySelector('.entries-table')?.scrollIntoView({ 
+                                        behavior: 'smooth', 
+                                        block: 'start' 
+                                    });
+                                }
+                            },
+                            plugins: {
+                                legend: {
+                                    display: true,
+                                    position: 'top'
+                                },
+                                tooltip: {
+                                    enabled: true,
+                                    callbacks: {
+                                        afterLabel: (context) => {
+                                            return 'Klicken zum Filtern';
+                                        }
+                                    }
+                                }
+                            },
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                    ticks: {
+                                        precision: 0
+                                    }
+                                },
+                                x: {
+                                    ticks: {
+                                        autoSkip: false,
+                                        maxRotation: 45,
+                                        minRotation: 45
+                                    }
+                                }
+                            }
+                        }
+                    });
+
+                    // Force render
+                    chartInstance.update();
+
+                    } catch (error) {
+                        console.error('Chart creation failed:', error);
+                    }
+                },
+
+                analyzeRootCause() {
+                    if (!this.result?.entries) return;
+                    
+                    const issues = [];
+                    const totalErrors = this.result.entries.filter(e => 
+                        e.category === 'client_errors' || 
+                        e.category.includes('error')
+                    ).length;
+                    
+                    if (totalErrors === 0) return;
+                    
+                    // Analyze error codes
+                    const errorCodes = {};
+                    const httpErrors = {};
+                    const messagePatterns = {};
+                    
+                    this.result.entries.forEach(entry => {
+                        if (entry.category === 'client_errors' || entry.category.includes('error')) {
+                            // Count error codes
+                            if (entry.error_code && entry.error_code !== null && entry.error_code !== 'null') {
+                                errorCodes[entry.error_code] = (errorCodes[entry.error_code] || 0) + 1;
+                            }
+                            
+                            // Extract HTTP status codes
+                            const httpMatch = entry.message?.match(/HTTP.*?(\d{3})|status\s+(\d{3})/i);
+                            if (httpMatch) {
+                                const status = httpMatch[1] || httpMatch[2];
+                                httpErrors[status] = (httpErrors[status] || 0) + 1;
+                            }
+                            
+                            // Pattern matching for common issues
+                            const msg = entry.message?.toLowerCase() || '';
+                            if (msg.includes('symbolic') || msg.includes('symlink')) {
+                                messagePatterns['symlink'] = (messagePatterns['symlink'] || 0) + 1;
+                            }
+                            if (msg.includes('not found') || msg.includes('404')) {
+                                messagePatterns['notfound'] = (messagePatterns['notfound'] || 0) + 1;
+                            }
+                            if (msg.includes('permission') || msg.includes('forbidden') || msg.includes('403')) {
+                                messagePatterns['permission'] = (messagePatterns['permission'] || 0) + 1;
+                            }
+                            if (msg.includes('network') || msg.includes('connection') || msg.includes('timeout')) {
+                                messagePatterns['network'] = (messagePatterns['network'] || 0) + 1;
+                            }
+                            if (msg.includes('invalid') && msg.includes('filename')) {
+                                messagePatterns['invalidname'] = (messagePatterns['invalidname'] || 0) + 1;
+                            }
+                        }
+                    });
+                    
+                    // Generate issues based on patterns
+                    
+                    // FileIgnored errors (symbolic links)
+                    if (errorCodes['FileIgnored'] > 10) {
+                        const percentage = ((errorCodes['FileIgnored'] / totalErrors) * 100).toFixed(1);
+                        issues.push({
+                            type: 'fileignored',
+                            severity: percentage > 30 ? 'high' : 'medium',
+                            icon: '🔗',
+                            title: 'Symbolische Links werden nicht synchronisiert',
+                            description: `${errorCodes['FileIgnored']} Dateien/Ordner können nicht synchronisiert werden, da es sich um symbolische Verknüpfungen handelt.`,
+                            count: errorCodes['FileIgnored'],
+                            percentage: percentage,
+                            suggestion: 'Symbolische Links sind nicht synchronisierbar. Ersetzen Sie diese durch echte Ordner oder Kopien der Dateien, oder schließen Sie diese Pfade von der Synchronisation aus.',
+                            filterCriteria: { error_code: 'FileIgnored' }
+                        });
+                    }
+                    
+                    // HTTP 404 errors
+                    if (httpErrors['404'] > 10) {
+                        const percentage = ((httpErrors['404'] / totalErrors) * 100).toFixed(1);
+                        issues.push({
+                            type: 'http404',
+                            severity: percentage > 20 ? 'high' : 'medium',
+                            icon: '🔍',
+                            title: 'Dateien auf Server nicht gefunden (HTTP 404)',
+                            description: `${httpErrors['404']} Anfragen schlugen fehl, weil Dateien auf dem Server nicht existieren.`,
+                            count: httpErrors['404'],
+                            percentage: percentage,
+                            suggestion: 'Dateien wurden möglicherweise auf dem Server gelöscht oder verschoben. Prüfen Sie den Server-Speicher oder synchronisieren Sie den Client neu.',
+                            filterCriteria: { search: 'HTTP status 404' }
+                        });
+                    }
+                    
+                    // HTTP 403 Permission errors
+                    if (httpErrors['403'] > 5) {
+                        const percentage = ((httpErrors['403'] / totalErrors) * 100).toFixed(1);
+                        issues.push({
+                            type: 'http403',
+                            severity: 'high',
+                            icon: '🚫',
+                            title: 'Zugriff verweigert (HTTP 403)',
+                            description: `${httpErrors['403']} Anfragen wurden aufgrund fehlender Berechtigungen abgelehnt.`,
+                            count: httpErrors['403'],
+                            percentage: percentage,
+                            suggestion: 'Überprüfen Sie die Benutzerberechtigungen auf dem Server. Möglicherweise fehlen Lese-/Schreibrechte für bestimmte Ordner.',
+                            filterCriteria: { search: '403' }
+                        });
+                    }
+                    
+                    // Network/Connection errors
+                    if (messagePatterns['network'] > 20) {
+                        const percentage = ((messagePatterns['network'] / totalErrors) * 100).toFixed(1);
+                        issues.push({
+                            type: 'network',
+                            severity: percentage > 40 ? 'critical' : 'high',
+                            icon: '🌐',
+                            title: 'Netzwerkverbindungsprobleme',
+                            description: `${messagePatterns['network']} Fehler stehen im Zusammenhang mit Netzwerkproblemen oder Timeouts.`,
+                            count: messagePatterns['network'],
+                            percentage: percentage,
+                            suggestion: 'Prüfen Sie die Internetverbindung, Firewall-Einstellungen und die Erreichbarkeit des Nextcloud-Servers. Möglicherweise ist der Server überlastet oder es gibt DNS-Probleme.',
+                            filterCriteria: { search: 'network' }
+                        });
+                    }
+                    
+                    // Invalid filename errors
+                    if (errorCodes['FileNameInvalidOnServer'] > 3 || messagePatterns['invalidname'] > 3) {
+                        const count = (errorCodes['FileNameInvalidOnServer'] || 0) + (messagePatterns['invalidname'] || 0);
+                        const percentage = ((count / totalErrors) * 100).toFixed(1);
+                        issues.push({
+                            type: 'invalidname',
+                            severity: 'medium',
+                            icon: '📝',
+                            title: 'Ungültige Dateinamen',
+                            description: `${count} Dateien haben Namen, die auf dem Server nicht erlaubt sind (z.B. Sonderzeichen, zu lang).`,
+                            count: count,
+                            percentage: percentage,
+                            suggestion: 'Benennen Sie die betroffenen Dateien um. Vermeiden Sie Sonderzeichen wie :, *, ?, ", <, >, | und sehr lange Dateinamen.',
+                            filterCriteria: { search: 'invalid' }
+                        });
+                    }
+                    
+                    // SyncError
+                    if (errorCodes['SyncError'] > 3) {
+                        const percentage = ((errorCodes['SyncError'] / totalErrors) * 100).toFixed(1);
+                        issues.push({
+                            type: 'syncerror',
+                            severity: 'high',
+                            icon: '⚠️',
+                            title: 'Allgemeine Synchronisationsfehler',
+                            description: `${errorCodes['SyncError']} allgemeine Synchronisationsfehler wurden erkannt.`,
+                            count: errorCodes['SyncError'],
+                            percentage: percentage,
+                            suggestion: 'Diese Fehler können verschiedene Ursachen haben. Prüfen Sie die Detail-Logs und erwägen Sie einen Neustart des Clients oder eine Neusynchronisation.',
+                            filterCriteria: { search: 'SyncError' }
+                        });
+                    }
+                    
+                    // === SERVER LOG ANALYSIS ===
+                    
+                    // ObjectStore errors (S3 storage issues)
+                    const objectstoreCount = this.result.categories?.objectstore_errors || 0;
+                    if (objectstoreCount > 100) {
+                        const percentage = ((objectstoreCount / this.result.total_entries) * 100).toFixed(1);
+                        const severity = objectstoreCount > 1000 ? 'critical' : (objectstoreCount > 500 ? 'high' : 'medium');
+                        issues.push({
+                            type: 'objectstore',
+                            severity: severity,
+                            icon: '💾',
+                            title: 'Massive ObjectStore/S3-Fehler',
+                            description: `${objectstoreCount} Fehler beim Zugriff auf den Object Storage (S3). Dies deutet auf schwerwiegende Backend-Speicherprobleme hin.`,
+                            count: objectstoreCount,
+                            percentage: percentage,
+                            suggestion: 'KRITISCH: Prüfen Sie sofort die S3/ObjectStore-Verbindung, Credentials, Netzwerk und Bucket-Verfügbarkeit. Server könnte instabil sein!',
+                            filterCriteria: { category: 'objectstore_errors' }
+                        });
+                    }
+                    
+                    // S3 503 errors
+                    const s3Count = this.result.categories?.s3_errors || 0;
+                    const s3_503 = this.result.entries?.filter(e => 
+                        e.category === 's3_errors' && (e.error_code === '503' || e.message?.includes('503'))
+                    ).length || 0;
+                    
+                    if (s3_503 > 10) {
+                        const percentage = ((s3_503 / this.result.total_entries) * 100).toFixed(1);
+                        issues.push({
+                            type: 's3_503',
+                            severity: 'critical',
+                            icon: '🔴',
+                            title: 'S3 Service Unavailable (503)',
+                            description: `${s3_503} HTTP 503-Fehler vom S3-Storage. Der Speicher ist überlastet oder nicht erreichbar.`,
+                            count: s3_503,
+                            percentage: percentage,
+                            suggestion: 'Der Object Storage Service (S3) antwortet nicht. Prüfen Sie: 1) S3-Service-Status, 2) Netzwerkverbindung zum Storage, 3) Rate Limits, 4) Storage-Kapazität.',
+                            filterCriteria: { category: 's3_errors', search: '503' }
+                        });
+                    }
+                    
+                    // DAV errors (WebDAV protocol issues)
+                    const davCount = this.result.categories?.dav_errors || 0;
+                    if (davCount > 100) {
+                        const percentage = ((davCount / this.result.total_entries) * 100).toFixed(1);
+                        const severity = davCount > 500 ? 'high' : 'medium';
+                        issues.push({
+                            type: 'dav',
+                            severity: severity,
+                            icon: '🌐',
+                            title: 'WebDAV-Protokollfehler',
+                            description: `${davCount} WebDAV-Fehler beim Dateizugriff. Clients können nicht richtig auf Dateien zugreifen.`,
+                            count: davCount,
+                            percentage: percentage,
+                            suggestion: 'WebDAV-Fehler sind oft durch Backend-Probleme verursacht. Prüfen Sie: 1) Datei-Locks, 2) Storage-Zugriff, 3) PHP-Timeouts, 4) Apache/Nginx-Konfiguration.',
+                            filterCriteria: { category: 'dav_errors' }
+                        });
+                    }
+                    
+                    // PHP errors
+                    const phpCount = this.result.categories?.php_errors || 0;
+                    if (phpCount > 20) {
+                        const percentage = ((phpCount / this.result.total_entries) * 100).toFixed(1);
+                        const severity = phpCount > 50 ? 'high' : 'medium';
+                        
+                        // Check for specific PHP error types
+                        const fopenErrors = this.result.entries?.filter(e => 
+                            e.category === 'php_errors' && e.message?.includes('fopen')
+                        ).length || 0;
+                        
+                        const typeErrors = this.result.entries?.filter(e => 
+                            e.category === 'php_errors' && (e.message?.includes('TypeError') || e.message?.includes('ArgumentCountError'))
+                        ).length || 0;
+                        
+                        let description = `${phpCount} PHP-Fehler wurden erkannt.`;
+                        let suggestion = 'Prüfen Sie die PHP-Logs für Details.';
+                        
+                        if (fopenErrors > 10) {
+                            description += ` Hauptsächlich fopen()-Fehler (${fopenErrors}x), die auf Storage-Zugriffsprobleme hindeuten.`;
+                            suggestion = 'fopen()-Fehler deuten auf Probleme beim Öffnen von Dateien hin. Prüfen Sie: 1) Storage-Verbindung, 2) Dateiberechtigungen, 3) PHP memory_limit, 4) Stream-Wrapper-Konfiguration.';
+                        } else if (typeErrors > 5) {
+                            description += ` Viele TypeErrors (${typeErrors}x), möglicherweise durch inkompatible Nextcloud-Apps.`;
+                            suggestion = 'TypeErrors deuten auf Code-Inkompatibilitäten hin. Prüfen Sie: 1) Nextcloud-Version, 2) PHP-Version, 3) App-Updates, 4) Deaktivieren Sie problematische Apps.';
+                        }
+                        
+                        issues.push({
+                            type: 'php',
+                            severity: severity,
+                            icon: '🐘',
+                            title: 'PHP-Fehler',
+                            description: description,
+                            count: phpCount,
+                            percentage: percentage,
+                            suggestion: suggestion,
+                            filterCriteria: { category: 'php_errors' }
+                        });
+                    }
+                    
+                    // Check for storage unavailable exceptions
+                    const storageUnavailable = this.result.entries?.filter(e => 
+                        e.message?.includes('StorageNotAvailableException') ||
+                        e.message?.includes('storage is not available') ||
+                        e.message?.includes('Storage not available')
+                    ).length || 0;
+                    
+                    if (storageUnavailable > 10) {
+                        const percentage = ((storageUnavailable / this.result.total_entries) * 100).toFixed(1);
+                        issues.push({
+                            type: 'storage_unavailable',
+                            severity: 'critical',
+                            icon: '💥',
+                            title: 'Storage nicht verfügbar',
+                            description: `${storageUnavailable} "Storage Not Available"-Exceptions. Der Hauptspeicher ist nicht erreichbar!`,
+                            count: storageUnavailable,
+                            percentage: percentage,
+                            suggestion: 'KRITISCH: Der Primary Storage ist offline oder nicht montiert. Prüfen Sie: 1) NFS/CIFS-Mounts, 2) S3-Credentials, 3) Netzwerk-Verbindung, 4) Storage-Server-Status.',
+                            filterCriteria: { search: 'StorageNotAvailableException' }
+                        });
+                    }
+                    
+                    // Check for file locking issues
+                    const lockErrors = this.result.entries?.filter(e => 
+                        e.message?.toLowerCase().includes('lock') && 
+                        (e.message?.toLowerCase().includes('failed') || e.message?.toLowerCase().includes('error'))
+                    ).length || 0;
+                    
+                    if (lockErrors > 20) {
+                        const percentage = ((lockErrors / this.result.total_entries) * 100).toFixed(1);
+                        issues.push({
+                            type: 'locking',
+                            severity: 'medium',
+                            icon: '🔒',
+                            title: 'File-Locking-Probleme',
+                            description: `${lockErrors} Fehler beim Sperren/Entsperren von Dateien. Dies kann zu Datenverlust führen!`,
+                            count: lockErrors,
+                            percentage: percentage,
+                            suggestion: 'Locking-Probleme können durch: 1) Redis/Memcached-Probleme, 2) Datenbank-Locks, 3) Tote Lock-Einträge verursacht werden. Prüfen Sie das Locking-Backend und bereinigen Sie alte Locks.',
+                            filterCriteria: { search: 'lock' }
+                        });
+                    }
+                    
+                    // Redis connection errors
+                    const redisErrors = this.result.entries?.filter(e => 
+                        e.message?.toLowerCase().includes('redisexception') || 
+                        e.message?.toLowerCase().includes('read error on connection to') && e.message?.toLowerCase().includes('6379')
+                    ).length || 0;
+                    
+                    if (redisErrors > 5) {
+                        const percentage = ((redisErrors / this.result.total_entries) * 100).toFixed(1);
+                        const severity = redisErrors > 100 ? 'critical' : redisErrors > 50 ? 'high' : 'medium';
+                        issues.push({
+                            type: 'redis_connection',
+                            severity: severity,
+                            icon: '🔴',
+                            title: 'Redis Connection/Read Errors',
+                            description: `${redisErrors} Redis-Verbindungsfehler erkannt. Redis-Cluster oder einzelne Nodes sind nicht erreichbar.`,
+                            count: redisErrors,
+                            percentage: percentage,
+                            suggestion: 'Redis-Probleme beheben: 1) Prüfen Sie Redis-Cluster-Status (kubectl get pods -n redis-cluster), 2) Netzwerk-Verbindung zu Redis-Nodes testen, 3) Redis-Memory und Logs prüfen, 4) Timeout-Werte in NextCloud-Konfiguration erhöhen, 5) Bei Cluster: Failover und Node-Erreichbarkeit prüfen.',
+                            filterCriteria: { search: 'RedisException' }
+                        });
+                    }
+                    
+                    // WorkflowEngine boot failures due to Redis
+                    const workflowRedisErrors = this.result.entries?.filter(e => 
+                        e.message?.toLowerCase().includes('could not boot workflowengine') && 
+                        e.message?.toLowerCase().includes('redis')
+                    ).length || 0;
+                    
+                    if (workflowRedisErrors > 5) {
+                        const percentage = ((workflowRedisErrors / this.result.total_entries) * 100).toFixed(1);
+                        const severity = workflowRedisErrors > 50 ? 'high' : 'medium';
+                        issues.push({
+                            type: 'workflow_redis',
+                            severity: severity,
+                            icon: '⚙️',
+                            title: 'WorkflowEngine Boot Failures (Redis)',
+                            description: `${workflowRedisErrors} WorkflowEngine-Start-Fehler durch Redis-Probleme. App kann nicht initialisiert werden.`,
+                            count: workflowRedisErrors,
+                            percentage: percentage,
+                            suggestion: 'WorkflowEngine-Probleme: 1) Redis-Verfügbarkeit sicherstellen, 2) WorkflowEngine App deaktivieren/aktivieren, 3) Redis-Cache leeren (occ cache:clear), 4) Memcache-Konfiguration in config.php prüfen, 5) Alternativ: File-basiertes Caching verwenden.',
+                            filterCriteria: { search: 'workflowengine' }
+                        });
+                    }
+                    
+                    // WebDAV failures due to Redis
+                    const davRedisErrors = this.result.entries?.filter(e => 
+                        e.message?.toLowerCase().includes('sabre') && 
+                        e.message?.toLowerCase().includes('serviceunavailable') && 
+                        e.message?.toLowerCase().includes('redis')
+                    ).length || 0;
+                    
+                    if (davRedisErrors > 3) {
+                        const percentage = ((davRedisErrors / this.result.total_entries) * 100).toFixed(1);
+                        const severity = davRedisErrors > 20 ? 'high' : 'medium';
+                        issues.push({
+                            type: 'dav_redis',
+                            severity: severity,
+                            icon: '📂',
+                            title: 'WebDAV Service Unavailable (Redis)',
+                            description: `${davRedisErrors} WebDAV-Anfragen schlagen fehl durch Redis-Verbindungsprobleme. Sync-Clients betroffen!`,
+                            count: davRedisErrors,
+                            percentage: percentage,
+                            suggestion: 'WebDAV-Redis-Probleme: 1) Redis-Cluster sofort prüfen (kritisch für Sync), 2) Betroffene Clients werden Fehler melden, 3) Temporär: Memcache in config.php deaktivieren, 4) Redis-Failover-Mechanismus überprüfen, 5) Load-Balancing zwischen Redis-Nodes optimieren.',
+                            filterCriteria: { category: 'dav_errors' }
+                        });
+                    }
+                    
+                    // Sort by count (most frequent first)
+                    issues.sort((a, b) => b.count - a.count);
+                    
+                    this.rootCause.issues = issues;
+                    console.log('🔍 Root Cause Analysis:', issues);
+                },
+
+                filterByRootCause(issue) {
+                    console.log('🔍 Filtering by root cause:', issue);
+                    
+                    // Clear all filters first
+                    this.filterDateFrom = '';
+                    this.filterDateTo = '';
+                    this.filterUsername = '';
+                    this.filterSearch = '';
+                    this.selectedCategory = null;
+                    this.currentPage = 1;
+                    
+                    // Apply filter based on issue type
+                    switch(issue.type) {
+                        case 'fileignored':
+                            this.filterSearch = 'FileIgnored';
+                            break;
+                        case 'http404':
+                            this.filterSearch = 'HTTP status 404';
+                            break;
+                        case 'http403':
+                            this.filterSearch = '403';
+                            break;
+                        case 'network':
+                            this.filterSearch = 'network';
+                            break;
+                        case 'invalidname':
+                            this.filterSearch = 'invalid';
+                            break;
+                        case 'syncerror':
+                            this.filterSearch = 'SyncError';
+                            break;
+                        case 'objectstore':
+                            this.selectedCategory = 'objectstore_errors';
+                            break;
+                        case 's3_503':
+                            this.selectedCategory = 's3_errors';
+                            this.filterSearch = '503';
+                            break;
+                        case 'dav':
+                            this.selectedCategory = 'dav_errors';
+                            break;
+                        case 'php':
+                            this.selectedCategory = 'php_errors';
+                            break;
+                        case 'storage_unavailable':
+                            this.filterSearch = 'StorageNotAvailableException';
+                            break;
+                        case 'locking':
+                            this.filterSearch = 'lock';
+                            break;
+                        case 'redis_connection':
+                            this.filterSearch = 'RedisException';
+                            break;
+                        case 'workflow_redis':
+                            this.filterSearch = 'workflowengine';
+                            break;
+                        case 'dav_redis':
+                            this.filterCategory = 'dav_errors';
+                            break;
+                    }
+                    
+                    this.filtersApplied = true;
+                    
+                    // Scroll to entries table
+                    this.$nextTick(() => {
+                        const entriesTable = document.querySelector('.entries-container');
+                        if (entriesTable) {
+                            entriesTable.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        }
+                    });
+                },
+
+                exportJSON() {
+                    const dataStr = JSON.stringify(this.result, null, 2);
+                    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+                    const url = URL.createObjectURL(dataBlob);
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = `analysis_${this.analysisId}.json`;
+                    link.click();
+                    URL.revokeObjectURL(url);
+                },
+
+                async deleteAnalysis() {
+                    if (!confirm('Möchten Sie diese Analyse wirklich löschen?')) {
+                        return;
+                    }
+
+                    try {
+                        const response = await fetch(`/api/results/${this.analysisId}`, {
+                            method: 'DELETE'
+                        });
+
+                        if (!response.ok) {
+                            throw new Error('Löschen fehlgeschlagen');
+                        }
+
+                        alert('Analyse gelöscht');
+                        window.location.href = '/results.html';
+
+                    } catch (err) {
+                        alert(err.message || 'Fehler beim Löschen');
+                    }
+                }
+            }
+        }
+    </script>
+</body>
+</html>

@@ -55,3 +55,10 @@ test_*.txt
 # OS
 Thumbs.db
 desktop.ini
+
+# Project-specific
+uploads/
+results/
+logs/
+backend/uploads/
+backend/results/

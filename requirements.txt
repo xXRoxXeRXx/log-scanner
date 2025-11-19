@@ -1,21 +1,31 @@
 # Nextcloud Log Analyzer Requirements
 
-# Core dependencies
+# === Desktop App (Tkinter) ===
 # tkinter is included with Python - no pip install needed
-# If tkinter is missing on Linux, install via system package manager:
-#   Ubuntu/Debian: sudo apt-get install python3-tk
-#   Fedora: sudo dnf install python3-tkinter
-#   macOS: Should be included with Python from python.org
-
-# Optional but recommended
 tkinterdnd2>=0.3.0  # For drag & drop support
 openpyxl>=3.0.0     # For Excel export
 tkcalendar>=1.6.0   # For visual datepicker in time filters
 
+# === Web App (Docker) ===
+# FastAPI Web Framework
+fastapi==0.109.0
+uvicorn[standard]==0.27.0
+
+# File Upload Support
+python-multipart==0.0.6
+
+# Async File Operations
+aiofiles==23.2.1
+
+# Data Validation
+pydantic==2.5.3
+
+# Testing
+pytest>=7.4.0
+pytest-asyncio==0.23.3
+httpx==0.26.0  # For FastAPI TestClient
+
 # Development dependencies
-# (uncomment for development)
-# pytest>=7.0.0
 # pytest-cov>=4.0.0
 # black>=22.0.0
 # flake8>=6.0.0
-# mypy>=1.0.0

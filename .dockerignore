@@ -1,0 +1,67 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environment
+venv/
+ENV/
+env/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Application specific
+uploads/
+results/
+
+*.log
+*.gz
+*.zip
+
+# Git
+.git/
+.gitignore
+
+# Documentation
+README.md
+LICENSE
+*.md
+!DOCKER_WEB_PLAN.md
+
+# Desktop app files (not needed in Docker)
+log_analyzer_v*.py
+test_*.py
+analyze_log.py
+categorization_report.md
+MACOS_COMPATIBILITY.md
+
+# Old parser files (using shared/ instead)
+/server_parser.py
+/client_parser.py
+/data_store.py
