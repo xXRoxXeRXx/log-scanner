@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  log-scanner:
+    build: .
+    image: log-scanner:latest
+    container_name: nextcloud-log-analyzer
+    ports:
+      - "8000:8000"
+    volumes:
+      # Persistent storage for uploads and results
+      - ./uploads:/app/uploads
+      - ./results:/app/results
+    environment:
+      - PORT=8000
+      - PYTHONUNBUFFERED=1
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+# Optional: Add volumes for better data management
+volumes:
+  uploads:
+  results:

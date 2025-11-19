@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nextcloud Log Analyzer</title>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.3/dist/cdn.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+            max-width: 600px;
+            width: 100%;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+            text-align: center;
+        }
+
+        .subtitle {
+            color: #666;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .upload-zone {
+            border: 3px dashed #667eea;
+            border-radius: 12px;
+            padding: 60px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: #f8f9ff;
+        }
+
+        .upload-zone:hover {
+            border-color: #764ba2;
+            background: #f0f1ff;
+        }
+
+        .upload-zone.dragover {
+            border-color: #764ba2;
+            background: #e8e9ff;
+            transform: scale(1.02);
+        }
+
+        .upload-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+        }
+
+        .upload-text {
+            color: #333;
+            font-size: 18px;
+            margin-bottom: 10px;
+            font-weight: 500;
+        }
+
+        .upload-hint {
+            color: #999;
+            font-size: 14px;
+        }
+
+        .file-list {
+            margin-top: 20px;
+        }
+
+        .file-item {
+            background: #f5f5f5;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .file-name {
+            color: #333;
+            font-size: 14px;
+            flex: 1;
+        }
+
+        .file-size {
+            color: #999;
+            font-size: 12px;
+            margin-left: 10px;
+        }
+
+        .remove-btn {
+            background: #ff4757;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 4px 8px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .remove-btn:hover {
+            background: #ff3838;
+        }
+
+        .analyze-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 16px 32px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 20px;
+            transition: transform 0.2s ease;
+        }
+
+        .analyze-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .analyze-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            color: #667eea;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin-right: 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error {
+            background: #ff4757;
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        .success {
+            background: #2ecc71;
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        .history-link {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .history-link a {
+            color: #667eea;
+            text-decoration: none;
+            font-size: 14px;
+        }
+
+        .history-link a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container" x-data="uploadApp()">
+        <h1>🔍 Nextcloud Log Analyzer</h1>
+        <p class="subtitle">Upload .log oder .gz Dateien für Analyse</p>
+
+        <!-- Upload Zone -->
+        <div class="upload-zone"
+             @click="$refs.fileInput.click()"
+             @dragover.prevent="dragover = true"
+             @dragleave.prevent="dragover = false"
+             @drop.prevent="handleDrop($event)"
+             :class="{ 'dragover': dragover }">
+            
+            <div class="upload-icon">📁</div>
+            <div class="upload-text">Dateien hier ablegen oder klicken</div>
+            <div class="upload-hint">Unterstützt: .log, .txt, .gz (max 50MB)</div>
+            
+            <input type="file"
+                   x-ref="fileInput"
+                   @change="handleFiles($event)"
+                   multiple
+                   accept=".log,.txt,.gz"
+                   style="display: none;">
+        </div>
+
+        <!-- File List -->
+        <div class="file-list" x-show="files.length > 0">
+            <template x-for="(file, index) in files" :key="index">
+                <div class="file-item">
+                    <span class="file-name" x-text="file.name"></span>
+                    <span class="file-size" x-text="formatFileSize(file.size)"></span>
+                    <button class="remove-btn" @click="removeFile(index)">✕</button>
+                </div>
+            </template>
+        </div>
+
+        <!-- Analyze Button -->
+        <button class="analyze-btn"
+                @click="analyze()"
+                :disabled="files.length === 0 || loading"
+                x-show="!loading">
+            <span x-show="files.length === 0">Bitte Dateien auswählen</span>
+            <span x-show="files.length > 0" x-text="'Analysiere ' + files.length + ' Datei(en)'"></span>
+        </button>
+
+        <!-- Loading State -->
+        <div class="loading" x-show="loading">
+            <div class="spinner"></div>
+            <div>Analyse läuft...</div>
+        </div>
+
+        <!-- Error Message -->
+        <div class="error" x-show="error" x-text="error"></div>
+
+        <!-- Success Message -->
+        <div class="success" x-show="success">
+            <div x-text="success"></div>
+            <div style="margin-top: 10px;">
+                <a :href="'/results.html?id=' + analysisId" style="color: white; font-weight: bold;">
+                    → Ergebnisse anzeigen
+                </a>
+            </div>
+        </div>
+
+        <!-- History Link -->
+        <div class="history-link">
+            <a href="/results.html">📊 Frühere Analysen anzeigen</a>
+        </div>
+    </div>
+
+    <script>
+        function uploadApp() {
+            return {
+                files: [],
+                dragover: false,
+                loading: false,
+                error: null,
+                success: null,
+                analysisId: null,
+
+                handleFiles(event) {
+                    const newFiles = Array.from(event.target.files);
+                    this.addFiles(newFiles);
+                },
+
+                handleDrop(event) {
+                    this.dragover = false;
+                    const newFiles = Array.from(event.dataTransfer.files);
+                    this.addFiles(newFiles);
+                },
+
+                addFiles(newFiles) {
+                    // Filter valid files
+                    const validFiles = newFiles.filter(file => {
+                        const ext = file.name.split('.').pop().toLowerCase();
+                        return ['log', 'txt', 'gz'].includes(ext);
+                    });
+
+                    if (validFiles.length < newFiles.length) {
+                        this.error = 'Einige Dateien wurden übersprungen (nur .log, .txt, .gz erlaubt)';
+                        setTimeout(() => this.error = null, 3000);
+                    }
+
+                    // Check file size
+                    const oversized = validFiles.filter(f => f.size > 50 * 1024 * 1024);
+                    if (oversized.length > 0) {
+                        this.error = 'Einige Dateien sind zu groß (max 50MB)';
+                        return;
+                    }
+
+                    this.files.push(...validFiles);
+                },
+
+                removeFile(index) {
+                    this.files.splice(index, 1);
+                },
+
+                formatFileSize(bytes) {
+                    if (bytes < 1024) return bytes + ' B';
+                    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+                    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+                },
+
+                async analyze() {
+                    this.loading = true;
+                    this.error = null;
+                    this.success = null;
+
+                    try {
+                        const formData = new FormData();
+                        this.files.forEach(file => {
+                            formData.append('files', file);
+                        });
+
+                        const response = await fetch('/api/upload', {
+                            method: 'POST',
+                            body: formData
+                        });
+
+                        if (!response.ok) {
+                            const errorData = await response.json();
+                            throw new Error(errorData.detail || 'Upload fehlgeschlagen');
+                        }
+
+                        const result = await response.json();
+                        this.analysisId = result.analysis_id;
+                        this.success = `Analyse erfolgreich! ${result.file_count} Datei(en) analysiert.`;
+                        this.files = [];
+
+                    } catch (err) {
+                        this.error = err.message || 'Ein Fehler ist aufgetreten';
+                    } finally {
+                        this.loading = false;
+                    }
+                }
+            }
+        }
+    </script>
+</body>
+</html>

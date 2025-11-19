@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analyse-Ergebnisse - Nextcloud Log Analyzer</title>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.3/dist/cdn.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+
+        .back-link {
+            display: inline-block;
+            color: #667eea;
+            text-decoration: none;
+            margin-bottom: 15px;
+            font-size: 14px;
+        }
+
+        .back-link:hover {
+            text-decoration: underline;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 32px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .chart-container {
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .chart-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        .entries-container {
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .entries-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        .entries-table th {
+            background: #f8f9fa;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            color: #333;
+            border-bottom: 2px solid #dee2e6;
+        }
+
+        .entries-table td {
+            padding: 12px;
+            border-bottom: 1px solid #dee2e6;
+            font-size: 14px;
+            color: #666;
+        }
+
+        .entries-table tr:hover {
+            background: #f8f9fa;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .badge-error {
+            background: #ff4757;
+            color: white;
+        }
+
+        .badge-warning {
+            background: #ffa502;
+            color: white;
+        }
+
+        .badge-info {
+            background: #3742fa;
+            color: white;
+        }
+
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 100px 20px;
+            color: white;
+            font-size: 18px;
+        }
+
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid white;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin-right: 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error {
+            background: white;
+            border-radius: 16px;
+            padding: 40px;
+            text-align: center;
+            color: #ff4757;
+        }
+
+        .history-list {
+            list-style: none;
+        }
+
+        .history-item {
+            background: #f8f9fa;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .history-item:hover {
+            background: #e9ecef;
+            cursor: pointer;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-danger {
+            background: #ff4757;
+            color: white;
+        }
+
+        .btn:hover {
+            opacity: 0.9;
+        }
+
+        .actions {
+            margin-top: 20px;
+            display: flex;
+            gap: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container" x-data="resultsApp()" x-init="init()">
+        <!-- Loading State -->
+        <div class="loading" x-show="loading">
+            <div class="spinner"></div>
+            <div>Lade Ergebnisse...</div>
+        </div>
+
+        <!-- Error State -->
+        <div class="error" x-show="error && !loading">
+            <h2>❌ Fehler</h2>
+            <p x-text="error"></p>
+            <a href="/" class="btn btn-primary" style="margin-top: 20px;">← Zurück zur Startseite</a>
+        </div>
+
+        <!-- Results View (Single Analysis) -->
+        <div x-show="!loading && !error && analysisId && result">
+            <div class="header">
+                <a href="/" class="back-link">← Neue Analyse</a>
+                <h1>📊 Analyse-Ergebnisse</h1>
+                <p style="color: #666; font-size: 14px; margin-top: 5px;">
+                    ID: <span x-text="analysisId"></span> | 
+                    <span x-text="result?.timestamp"></span>
+                </p>
+
+                <!-- Stats Grid -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-value" x-text="result?.file_count || 0"></div>
+                        <div class="stat-label">Dateien</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" x-text="result?.total_entries || 0"></div>
+                        <div class="stat-label">Einträge</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" x-text="result?.categories?.s3_errors || 0"></div>
+                        <div class="stat-label">S3 Errors</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" x-text="result?.categories?.dav_errors || 0"></div>
+                        <div class="stat-label">DAV Errors</div>
+                    </div>
+                </div>
+
+                <div class="actions">
+                    <button @click="exportJSON()" class="btn btn-primary">📥 JSON Export</button>
+                    <button @click="deleteAnalysis()" class="btn btn-danger">🗑️ Löschen</button>
+                </div>
+            </div>
+
+            <!-- Charts -->
+            <div class="chart-container">
+                <div class="chart-title">Kategorien-Übersicht</div>
+                <canvas id="categoriesChart" width="400" height="200"></canvas>
+            </div>
+
+            <!-- Log Entries Table -->
+            <div class="entries-container">
+                <div class="chart-title">Log-Einträge (erste 100)</div>
+                
+                <div x-show="result?.entries?.length === 0">
+                    <p style="color: #999; text-align: center; padding: 40px;">
+                        Keine Einträge gefunden. Parser-Integration noch ausstehend.
+                    </p>
+                </div>
+
+                <table class="entries-table" x-show="result?.entries?.length > 0">
+                    <thead>
+                        <tr>
+                            <th>Zeit</th>
+                            <th>Typ</th>
+                            <th>Nachricht</th>
+                            <th>Kategorie</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <template x-for="entry in result?.entries?.slice(0, 100)" :key="entry.time">
+                            <tr>
+                                <td x-text="entry.time"></td>
+                                <td>
+                                    <span class="badge"
+                                          :class="{
+                                              'badge-error': entry.type === 'ERROR',
+                                              'badge-warning': entry.type === 'WARNING',
+                                              'badge-info': entry.type === 'INFO'
+                                          }"
+                                          x-text="entry.type"></span>
+                                </td>
+                                <td x-text="entry.message?.substring(0, 100) + '...'"></td>
+                                <td x-text="entry.category"></td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- History View (List All) -->
+        <div x-show="!loading && !error && !analysisId && historyList">
+            <div class="header">
+                <a href="/" class="back-link">← Neue Analyse</a>
+                <h1>📚 Analyse-Historie</h1>
+                <p style="color: #666; font-size: 14px; margin-top: 5px;">
+                    <span x-text="historyList?.length || 0"></span> gespeicherte Analysen
+                </p>
+            </div>
+
+            <div class="entries-container">
+                <ul class="history-list">
+                    <template x-for="item in historyList" :key="item.id">
+                        <li class="history-item" @click="window.location.href = '/results.html?id=' + item.id">
+                            <div>
+                                <strong x-text="item.timestamp"></strong>
+                                <div style="font-size: 14px; color: #666; margin-top: 5px;">
+                                    <span x-text="item.file_count"></span> Dateien | 
+                                    <span x-text="item.total_entries"></span> Einträge
+                                </div>
+                            </div>
+                            <span class="badge badge-info" x-text="item.status"></span>
+                        </li>
+                    </template>
+                </ul>
+
+                <div x-show="!historyList || historyList.length === 0" style="text-align: center; padding: 40px; color: #999;">
+                    Keine Analysen vorhanden
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function resultsApp() {
+            return {
+                loading: true,
+                error: null,
+                analysisId: null,
+                result: null,
+                historyList: null,
+                chart: null,
+
+                async init() {
+                    // Check if we have an ID in URL
+                    const params = new URLSearchParams(window.location.search);
+                    this.analysisId = params.get('id');
+
+                    if (this.analysisId) {
+                        await this.loadResult(this.analysisId);
+                    } else {
+                        await this.loadHistory();
+                    }
+                },
+
+                async loadResult(id) {
+                    try {
+                        const response = await fetch(`/api/results/${id}`);
+                        
+                        if (!response.ok) {
+                            throw new Error('Analyse nicht gefunden');
+                        }
+
+                        this.result = await response.json();
+                        
+                        // Wait for Alpine to render, then create chart
+                        this.$nextTick(() => {
+                            this.createChart();
+                        });
+
+                    } catch (err) {
+                        this.error = err.message || 'Fehler beim Laden der Ergebnisse';
+                    } finally {
+                        this.loading = false;
+                    }
+                },
+
+                async loadHistory() {
+                    try {
+                        const response = await fetch('/api/results');
+                        
+                        if (!response.ok) {
+                            throw new Error('Fehler beim Laden der Historie');
+                        }
+
+                        const data = await response.json();
+                        this.historyList = data.results;
+
+                    } catch (err) {
+                        this.error = err.message || 'Fehler beim Laden der Historie';
+                    } finally {
+                        this.loading = false;
+                    }
+                },
+
+                createChart() {
+                    if (!this.result?.categories) return;
+
+                    const ctx = document.getElementById('categoriesChart');
+                    if (!ctx) return;
+
+                    const categories = this.result.categories;
+                    const labels = Object.keys(categories);
+                    const data = Object.values(categories);
+
+                    if (this.chart) {
+                        this.chart.destroy();
+                    }
+
+                    this.chart = new Chart(ctx, {
+                        type: 'bar',
+                        data: {
+                            labels: labels,
+                            datasets: [{
+                                label: 'Anzahl',
+                                data: data,
+                                backgroundColor: [
+                                    'rgba(255, 99, 132, 0.7)',
+                                    'rgba(54, 162, 235, 0.7)',
+                                    'rgba(255, 206, 86, 0.7)',
+                                    'rgba(75, 192, 192, 0.7)',
+                                    'rgba(153, 102, 255, 0.7)',
+                                    'rgba(255, 159, 64, 0.7)'
+                                ],
+                                borderColor: [
+                                    'rgba(255, 99, 132, 1)',
+                                    'rgba(54, 162, 235, 1)',
+                                    'rgba(255, 206, 86, 1)',
+                                    'rgba(75, 192, 192, 1)',
+                                    'rgba(153, 102, 255, 1)',
+                                    'rgba(255, 159, 64, 1)'
+                                ],
+                                borderWidth: 2
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            plugins: {
+                                legend: {
+                                    display: false
+                                }
+                            },
+                            scales: {
+                                y: {
+                                    beginAtZero: true
+                                }
+                            }
+                        }
+                    });
+                },
+
+                exportJSON() {
+                    const dataStr = JSON.stringify(this.result, null, 2);
+                    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+                    const url = URL.createObjectURL(dataBlob);
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = `analysis_${this.analysisId}.json`;
+                    link.click();
+                    URL.revokeObjectURL(url);
+                },
+
+                async deleteAnalysis() {
+                    if (!confirm('Möchten Sie diese Analyse wirklich löschen?')) {
+                        return;
+                    }
+
+                    try {
+                        const response = await fetch(`/api/results/${this.analysisId}`, {
+                            method: 'DELETE'
+                        });
+
+                        if (!response.ok) {
+                            throw new Error('Löschen fehlgeschlagen');
+                        }
+
+                        alert('Analyse gelöscht');
+                        window.location.href = '/results.html';
+
+                    } catch (err) {
+                        alert(err.message || 'Fehler beim Löschen');
+                    }
+                }
+            }
+        }
+    </script>
+</body>
+</html>
