@@ -68,7 +68,7 @@ class ClientLogParser:
             
             # Check for errors/warnings
             if self._is_error_level(level_str, message):
-                self._store_error(timestamp, message, source_file, line_number, line)
+                self._store_error(timestamp, level_str, message, source_file, line_number, line)
             
             # Check for story events
             self._check_story_patterns(timestamp, message, source_file, line_number, line)
@@ -96,12 +96,13 @@ class ClientLogParser:
             "Error transferring" in message
         )
     
-    def _store_error(self, timestamp: str, message: str, source_file: str = "", line_number: int = 0, raw_line: str = "") -> None:
+    def _store_error(self, timestamp: str, level: str, message: str, source_file: str = "", line_number: int = 0, raw_line: str = "") -> None:
         """
         Store error entry in data store.
         
         Args:
             timestamp: Log timestamp
+            level: Log level (info, warning, error, critical, etc.)
             message: Error message
             source_file: Name of the source log file
             line_number: Line number in the source file
@@ -110,9 +111,18 @@ class ClientLogParser:
         # Extract error code from client message
         error_code = self._extract_error_code(message)
         
+        # Determine type based on level
+        level_lower = level.lower()
+        if level_lower == 'warning':
+            entry_type = "WARNING"
+        elif level_lower in ['error', 'fatal', 'critical']:
+            entry_type = "ERROR"
+        else:
+            entry_type = "INFO"
+        
         self.data_store.add_entry("client_errors", {
             "time": timestamp,
-            "type": "Client Error",
+            "type": entry_type,
             "msg": message,
             "error_code": error_code,
             "source_file": source_file,
@@ -132,6 +142,16 @@ class ClientLogParser:
         """
         import re
         
+        # Check for OCC error codes (e.g., OCC::SyncFileItem::FileNameInvalidOnServer)
+        occ_match = re.search(r'OCC::[\w:]+::([\w]+)', message)
+        if occ_match:
+            return occ_match.group(1)
+        
+        # Check for simpler OCC codes
+        occ_simple = re.search(r'OCC::([\w]+)', message)
+        if occ_simple:
+            return occ_simple.group(1)
+        
         # Check for HTTP status codes
         http_match = re.search(r'HTTP[/\s]+(\d{3})', message, re.IGNORECASE)
         if http_match:
@@ -143,10 +163,13 @@ class ClientLogParser:
             return f"NET_{network_error.group(1)}"
         
         # Check for error codes in format "Error: XXX" or "error code: XXX"
+        # But avoid common words like "error item", "error message", etc.
         error_match = re.search(r'error\s*(?:code)?[:\s]+([A-Za-z0-9_-]+)', message, re.IGNORECASE)
         if error_match:
             code = error_match.group(1)
-            if len(code) < 30:
+            # Filter out common words that aren't actual error codes
+            excluded_words = ['item', 'message', 'in', 'at', 'to', 'from', 'with', 'for', 'the', 'a', 'an']
+            if len(code) < 30 and code.lower() not in excluded_words:
                 return code
         
         return None
