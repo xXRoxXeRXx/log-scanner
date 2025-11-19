@@ -97,7 +97,8 @@ def analyze_log_files(file_paths: List[Path]) -> Dict:
             "other_errors": len(data_store._data.get("other_errors", [])),
             "server_warnings": len(data_store._data.get("server_warnings", [])),
             "server_info": len(data_store._data.get("server_info", [])),
-            "client_errors": len(data_store._data.get("client_errors", []))
+            "client_errors": len(data_store._data.get("client_errors", [])),
+            "client_events": len(data_store._data.get("client_events", []))
         }
         
         print(f"📊 Results: {categories}")
@@ -192,6 +193,19 @@ def analyze_log_files(file_paths: List[Path]) -> Dict:
                 "type": "ERROR",
                 "message": entry.get("msg", entry.get("message", "")),
                 "category": "client_errors",
+                "error_code": entry.get("error_code", ""),
+                "source_file": entry.get("source_file", ""),
+                "line_number": entry.get("line_number", 0),
+                "raw_line": entry.get("raw_line", "")
+            })
+        
+        # Add client events (story events)
+        for entry in data_store._data.get("client_events", []):
+            all_entries.append({
+                "time": entry.get("time", ""),
+                "type": entry.get("type", "INFO"),
+                "message": entry.get("msg", entry.get("message", "")),
+                "category": "client_events",
                 "error_code": entry.get("error_code", ""),
                 "source_file": entry.get("source_file", ""),
                 "line_number": entry.get("line_number", 0),

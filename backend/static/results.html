@@ -804,6 +804,10 @@
 
                         this.result = await response.json();
                         
+                        console.log('📊 Loaded result:', this.result);
+                        console.log('📝 Entries count:', this.result?.entries?.length);
+                        console.log('📝 First entry:', this.result?.entries?.[0]);
+                        
                         // Wait for Alpine to render, then create chart with additional delay
                         this.$nextTick(() => {
                             setTimeout(() => {
@@ -812,6 +816,7 @@
                         });
 
                     } catch (err) {
+                        console.error('❌ Error loading result:', err);
                         this.error = err.message || 'Fehler beim Laden der Ergebnisse';
                     } finally {
                         this.loading = false;
