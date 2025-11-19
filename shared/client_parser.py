@@ -68,10 +68,10 @@ class ClientLogParser:
             
             # Check for errors/warnings
             if self._is_error_level(level_str, message):
-                self._store_error(timestamp, message, source_file, line_number)
+                self._store_error(timestamp, message, source_file, line_number, line)
             
             # Check for story events
-            self._check_story_patterns(timestamp, message, source_file, line_number)
+            self._check_story_patterns(timestamp, message, source_file, line_number, line)
             
             return True
             
@@ -96,7 +96,7 @@ class ClientLogParser:
             "Error transferring" in message
         )
     
-    def _store_error(self, timestamp: str, message: str, source_file: str = "", line_number: int = 0) -> None:
+    def _store_error(self, timestamp: str, message: str, source_file: str = "", line_number: int = 0, raw_line: str = "") -> None:
         """
         Store error entry in data store.
         
@@ -105,6 +105,7 @@ class ClientLogParser:
             message: Error message
             source_file: Name of the source log file
             line_number: Line number in the source file
+            raw_line: Original raw log line
         """
         # Extract error code from client message
         error_code = self._extract_error_code(message)
@@ -115,7 +116,8 @@ class ClientLogParser:
             "msg": message,
             "error_code": error_code,
             "source_file": source_file,
-            "line_number": line_number
+            "line_number": line_number,
+            "raw_line": raw_line.strip()
         })
     
     def _extract_error_code(self, message: str) -> Optional[str]:
@@ -149,7 +151,7 @@ class ClientLogParser:
         
         return None
     
-    def _check_story_patterns(self, timestamp: str, message: str, source_file: str = "", line_number: int = 0) -> None:
+    def _check_story_patterns(self, timestamp: str, message: str, source_file: str = "", line_number: int = 0, raw_line: str = "") -> None:
         """
         Check message against story patterns and store matches.
         
@@ -158,6 +160,7 @@ class ClientLogParser:
             message: Log message
             source_file: Name of the source log file
             line_number: Line number in the source file
+            raw_line: Original raw log line
         """
         for pattern, event_name in self.story_patterns:
             match = pattern.search(message)
@@ -168,7 +171,8 @@ class ClientLogParser:
                     "type": event_name,
                     "msg": details,
                     "source_file": source_file,
-                    "line_number": line_number
+                    "line_number": line_number,
+                    "raw_line": raw_line.strip()
                 })
                 break  # Only match first pattern
     

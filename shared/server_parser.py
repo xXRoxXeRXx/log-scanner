@@ -52,6 +52,8 @@ class ServerLogParser:
         """
         try:
             data = json.loads(line)
+            # Store the raw line in data for later use
+            data['raw_line'] = line.strip()
             return self._categorize_entry(data, source_file, line_number)
         except json.JSONDecodeError as e:
             logger.debug(f"Failed to parse JSON line: {e}")
@@ -99,7 +101,8 @@ class ServerLogParser:
                 "user": user,
                 "error_code": error_code or http_code,
                 "source_file": source_file,
-                "line_number": line_number
+                "line_number": line_number,
+                "raw_line": data.get('raw_line', '')
             })
         
         # Priority 2: DAV Errors
@@ -111,7 +114,8 @@ class ServerLogParser:
                 "user": user,
                 "error_code": error_code,
                 "source_file": source_file,
-                "line_number": line_number
+                "line_number": line_number,
+                "raw_line": data.get('raw_line', '')
             })
         
         # Priority 3: Objectstore Errors
@@ -123,7 +127,8 @@ class ServerLogParser:
                 "user": user,
                 "error_code": error_code,
                 "source_file": source_file,
-                "line_number": line_number
+                "line_number": line_number,
+                "raw_line": data.get('raw_line', '')
             })
         
         # Priority 4: PHP Errors
@@ -135,7 +140,8 @@ class ServerLogParser:
                 "user": user,
                 "error_code": error_code,
                 "source_file": source_file,
-                "line_number": line_number
+                "line_number": line_number,
+                "raw_line": data.get('raw_line', '')
             })
         
         # Priority 5: Other Errors (level 3)
@@ -147,7 +153,8 @@ class ServerLogParser:
                 "user": user,
                 "error_code": error_code,
                 "source_file": source_file,
-                "line_number": line_number
+                "line_number": line_number,
+                "raw_line": data.get('raw_line', '')
             })
         
         # Priority 6: Warnings (level 2)
@@ -159,7 +166,8 @@ class ServerLogParser:
                 "user": user,
                 "error_code": error_code,
                 "source_file": source_file,
-                "line_number": line_number
+                "line_number": line_number,
+                "raw_line": data.get('raw_line', '')
             })
         
         # Priority 7: Info (level 1)
@@ -171,7 +179,8 @@ class ServerLogParser:
                 "user": user,
                 "error_code": error_code,
                 "source_file": source_file,
-                "line_number": line_number
+                "line_number": line_number,
+                "raw_line": data.get('raw_line', '')
             })
         
         # Priority 8: Debug (level 0)
@@ -183,7 +192,8 @@ class ServerLogParser:
                 "user": user,
                 "error_code": error_code,
                 "source_file": source_file,
-                "line_number": line_number
+                "line_number": line_number,
+                "raw_line": data.get('raw_line', '')
             })
         
         return False

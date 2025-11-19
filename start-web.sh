@@ -1,4 +1,4 @@
-#!/bin/bash
+-#!/bin/bash
 # Quick Start Script for Docker Web Deployment (Linux/macOS)
 
 echo "🚀 Nextcloud Log Analyzer - Docker Setup"

@@ -219,7 +219,7 @@
             
             <div class="upload-icon">📁</div>
             <div class="upload-text">Dateien hier ablegen oder klicken</div>
-            <div class="upload-hint">Unterstützt: .log, .txt, .gz (max 50MB)</div>
+            <div class="upload-hint">Unterstützt: .log, .txt, .gz (max 2GB pro Datei)</div>
             
             <input type="file"
                    x-ref="fileInput"
@@ -307,10 +307,10 @@
                         setTimeout(() => this.error = null, 3000);
                     }
 
-                    // Check file size
-                    const oversized = validFiles.filter(f => f.size > 50 * 1024 * 1024);
+                    // Check file size (2GB limit)
+                    const oversized = validFiles.filter(f => f.size > 2 * 1024 * 1024 * 1024);
                     if (oversized.length > 0) {
-                        this.error = 'Einige Dateien sind zu groß (max 50MB)';
+                        this.error = 'Einige Dateien sind zu groß (max 2GB)';
                         return;
                     }
 

@@ -112,6 +112,9 @@
             font-weight: 600;
             color: #333;
             border-bottom: 2px solid #dee2e6;
+            position: sticky;
+            top: 0;
+            z-index: 10;
         }
 
         .entries-table td {
@@ -119,6 +122,19 @@
             border-bottom: 1px solid #dee2e6;
             font-size: 14px;
             color: #666;
+        }
+
+        .entries-table td:first-child {
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            white-space: nowrap;
+            color: #495057;
+        }
+
+        .entries-table td:nth-child(3) {
+            max-width: 500px;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .entries-table tr:hover {
@@ -274,6 +290,30 @@
                         <div class="stat-value" x-text="result?.categories?.dav_errors || 0"></div>
                         <div class="stat-label">DAV Errors</div>
                     </div>
+                    <div class="stat-card">
+                        <div class="stat-value" x-text="result?.categories?.objectstore_errors || 0"></div>
+                        <div class="stat-label">ObjectStore Errors</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" x-text="result?.categories?.php_errors || 0"></div>
+                        <div class="stat-label">PHP Errors</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" x-text="result?.categories?.other_errors || 0"></div>
+                        <div class="stat-label">Andere Errors</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" x-text="result?.categories?.server_warnings || 0"></div>
+                        <div class="stat-label">Warnings</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" x-text="result?.categories?.server_info || 0"></div>
+                        <div class="stat-label">Server Info</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" x-text="result?.categories?.client_errors || 0"></div>
+                        <div class="stat-label">Client Errors</div>
+                    </div>
                 </div>
 
                 <div class="actions">
@@ -284,48 +324,240 @@
 
             <!-- Charts -->
             <div class="chart-container">
-                <div class="chart-title">Kategorien-Übersicht</div>
-                <canvas id="categoriesChart" width="400" height="200"></canvas>
+                <div class="chart-title">Kategorien-Übersicht <span style="font-size: 14px; color: #999; font-weight: normal;">(Klicken zum Filtern)</span></div>
+                <div style="position: relative; height: 400px; width: 100%;">
+                    <canvas id="categoriesChart" style="cursor: pointer;"></canvas></canvas>
+                </div>
             </div>
 
             <!-- Log Entries Table -->
             <div class="entries-container">
-                <div class="chart-title">Log-Einträge (erste 100)</div>
+                <!-- Filter Section -->
+                <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                    <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
+                        <!-- Date From -->
+                        <div>
+                            <label style="font-size: 12px; color: #666; display: block; margin-bottom: 5px;">Von Datum:</label>
+                            <input type="date" x-model="filterDateFrom" 
+                                   style="padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
+                        </div>
+                        
+                        <!-- Date To -->
+                        <div>
+                            <label style="font-size: 12px; color: #666; display: block; margin-bottom: 5px;">Bis Datum:</label>
+                            <input type="date" x-model="filterDateTo" 
+                                   style="padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
+                        </div>
+                        
+                        <!-- Username Filter -->
+                        <div>
+                            <label style="font-size: 12px; color: #666; display: block; margin-bottom: 5px;">Username:</label>
+                            <select x-model="filterUsername" 
+                                    style="padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; width: 200px; cursor: pointer;">
+                                <option value="">Alle</option>
+                                <template x-for="user in availableUsers" :key="user">
+                                    <option :value="user" x-text="user"></option>
+                                </template>
+                            </select>
+                        </div>
+                        
+                        <!-- Search Filter -->
+                        <div>
+                            <label style="font-size: 12px; color: #666; display: block; margin-bottom: 5px;">Suche:</label>
+                            <input type="text" x-model="filterSearch" placeholder="Dateiname, Nachricht, etc..."
+                                   style="padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; width: 250px;">
+                        </div>
+                        
+                        <!-- Filter Buttons -->
+                        <div style="display: flex; gap: 10px; align-items: flex-end;">
+                            <button @click="applyFilters()" class="btn" style="background: #667eea; color: white; padding: 8px 16px;">
+                                ✓ Filter anwenden
+                            </button>
+                            <button @click="resetAllFilters()" class="btn" style="background: #f56565; color: white; padding: 8px 16px;">
+                                ✗ Zurücksetzen
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Active Filters Display -->
+                    <div x-show="hasActiveFilters()" style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #ddd;">
+                        <div style="font-size: 12px; color: #666;">
+                            <strong>Aktive Filter:</strong>
+                            <span x-show="filterDateFrom" style="margin-left: 10px;">
+                                📅 Von: <strong x-text="filterDateFrom"></strong>
+                            </span>
+                            <span x-show="filterDateTo" style="margin-left: 10px;">
+                                📅 Bis: <strong x-text="filterDateTo"></strong>
+                            </span>
+                            <span x-show="filterUsername" style="margin-left: 10px;">
+                                👤 User: <strong x-text="filterUsername"></strong>
+                            </span>
+                            <span x-show="filterSearch" style="margin-left: 10px;">
+                                🔍 Suche: <strong x-text="filterSearch"></strong>
+                            </span>
+                            <span x-show="selectedCategory" style="margin-left: 10px;">
+                                📂 Kategorie: <strong x-text="selectedCategory"></strong>
+                            </span>
+                        </div>
+                    </div>
+                </div>
                 
-                <div x-show="result?.entries?.length === 0">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
+                    <div>
+                        <div class="chart-title" style="margin: 0;">Log-Einträge</div>
+                        <div style="font-size: 14px; color: #666; margin-top: 5px;">
+                            Zeige <span x-text="Math.min((currentPage - 1) * entriesPerPage + 1, filteredEntries.length)"></span> 
+                            bis <span x-text="Math.min(currentPage * entriesPerPage, filteredEntries.length)"></span> 
+                            von <span x-text="filteredEntries.length"></span> Einträgen
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                        <button x-show="selectedCategory" 
+                                @click="selectedCategory = null; currentPage = 1;" 
+                                class="btn" 
+                                style="padding: 5px 10px; font-size: 12px; background: #ff4757; color: white;">
+                            ✕ Filter entfernen
+                        </button>
+                    </div>
+                </div>
+                
+                <div x-show="!filteredEntries || filteredEntries?.length === 0">
                     <p style="color: #999; text-align: center; padding: 40px;">
-                        Keine Einträge gefunden. Parser-Integration noch ausstehend.
+                        <span x-show="!selectedCategory">Keine Einträge gefunden.</span>
+                        <span x-show="selectedCategory">Keine Einträge in dieser Kategorie gefunden.</span>
                     </p>
                 </div>
 
-                <table class="entries-table" x-show="result?.entries?.length > 0">
+                <table class="entries-table" x-show="filteredEntries?.length > 0" style="table-layout: fixed; width: 100%;">
                     <thead>
                         <tr>
-                            <th>Zeit</th>
-                            <th>Typ</th>
-                            <th>Nachricht</th>
-                            <th>Kategorie</th>
+                            <th style="width: 180px;">Zeit</th>
+                            <th style="width: 100px;">Typ</th>
+                            <th style="width: 120px;">Error Code</th>
+                            <th style="width: auto;">Nachricht</th>
+                            <th style="width: 150px;">Kategorie</th>
+                            <th style="width: 80px;">Details</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <template x-for="entry in result?.entries?.slice(0, 100)" :key="entry.time">
+                        <template x-for="(entry, index) in paginatedEntries" :key="entry.time + '_' + index">
                             <tr>
-                                <td x-text="entry.time"></td>
-                                <td>
-                                    <span class="badge"
-                                          :class="{
-                                              'badge-error': entry.type === 'ERROR',
-                                              'badge-warning': entry.type === 'WARNING',
-                                              'badge-info': entry.type === 'INFO'
-                                          }"
-                                          x-text="entry.type"></span>
+                                <!-- Main Row Content in a single TR with nested table for details -->
+                                <td colspan="6" style="padding: 0;">
+                                    <table style="width: 100%; border-collapse: collapse; table-layout: fixed;">
+                                        <colgroup>
+                                            <col style="width: 180px;">
+                                            <col style="width: 100px;">
+                                            <col style="width: 120px;">
+                                            <col style="width: auto;">
+                                            <col style="width: 150px;">
+                                            <col style="width: 80px;">
+                                        </colgroup>
+                                        <tr style="cursor: pointer;" @click="selectedEntry = (selectedEntry === entry ? null : entry)">
+                                            <td x-text="entry.time" style="font-size: 12px; padding: 12px 8px 12px 8px; border-bottom: 1px solid #e2e8f0;"></td>
+                                            <td style="padding: 12px 8px 12px 18px; border-bottom: 1px solid #e2e8f0;">
+                                                <span class="badge"
+                                                      :class="{
+                                                          'badge-error': entry.type === 'ERROR',
+                                                          'badge-warning': entry.type === 'WARNING',
+                                                          'badge-info': entry.type === 'INFO'
+                                                      }"
+                                                      x-text="entry.type"></span>
+                                            </td>
+                                            <td style="padding: 12px 8px 12px 18px; border-bottom: 1px solid #e2e8f0;">
+                                                <span class="badge" 
+                                                      :class="entry.error_code ? 'badge-error' : ''"
+                                                      style="font-family: monospace; font-size: 11px;"
+                                                      x-text="entry.error_code || '-'"></span>
+                                            </td>
+                                            <td style="padding: 12px 18px 12px 18px; border-bottom: 1px solid #e2e8f0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                                <span :title="entry.message" x-text="entry.message"></span>
+                                            </td>
+                                            <td style="padding: 12px 8px 12px 18px; border-bottom: 1px solid #e2e8f0;">
+                                                <span class="badge badge-info" 
+                                                      :style="selectedCategory === entry.category ? 'background: #667eea; font-weight: bold;' : ''"
+                                                      x-text="entry.category"></span>
+                                            </td>
+                                            <td style="padding: 12px 8px; border-bottom: 1px solid #e2e8f0; text-align: center;">
+                                                <button class="btn" style="padding: 4px 8px; font-size: 12px; background: #667eea; color: white;" @click.stop="selectedEntry = (selectedEntry === entry ? null : entry)">
+                                                    <span x-show="selectedEntry !== entry">👁️</span>
+                                                    <span x-show="selectedEntry === entry">✕</span>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                        
+                                        <!-- Detail Row - shown/hidden with x-show -->
+                                        <tr x-show="selectedEntry === entry" style="background: #f8f9fa;">
+                                            <td colspan="6" style="padding: 20px;">
+                                                <div style="background: white; padding: 15px; border-radius: 8px; border: 2px solid #667eea;">
+                                                    <h4 style="margin: 0 0 15px 0; color: #667eea;">📋 Details</h4>
+                                                    <div style="display: grid; grid-template-columns: auto 1fr; gap: 10px; font-size: 14px;">
+                                                        <strong>Zeit:</strong>
+                                                        <span x-text="entry.time"></span>
+                                                        
+                                                        <strong>Typ:</strong>
+                                                        <span x-text="entry.type"></span>
+                                                        
+                                                        <strong>Error Code:</strong>
+                                                        <span x-text="entry.error_code || 'Kein Error Code'"></span>
+                                                        
+                                                        <strong>Kategorie:</strong>
+                                                        <span x-text="entry.category"></span>
+                                                        
+                                                        <strong>Datei:</strong>
+                                                        <span x-text="entry.source_file || 'Unbekannt'"></span>
+                                                        
+                                                        <strong>Zeilennummer:</strong>
+                                                        <span x-text="entry.line_number || '-'"></span>
+                                                        
+                                                        <strong>Nachricht:</strong>
+                                                        <span x-text="entry.message" style="word-break: break-word;"></span>
+                                                        
+                                                        <strong>Rohe Logzeile:</strong>
+                                                        <pre x-text="entry.raw_line || 'Nicht verfügbar'" 
+                                                             style="background: #2d3436; color: #dfe6e9; padding: 10px; border-radius: 4px; overflow-x: auto; margin: 0; font-size: 12px; font-family: 'Courier New', monospace;"></pre>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </table>
                                 </td>
-                                <td x-text="entry.message?.substring(0, 100) + '...'"></td>
-                                <td x-text="entry.category"></td>
                             </tr>
                         </template>
                     </tbody>
                 </table>
+
+                <!-- Pagination -->
+                <div x-show="filteredEntries.length > 0 && totalPages > 1" 
+                     style="display: flex; justify-content: center; align-items: center; gap: 10px; margin-top: 20px; flex-wrap: wrap;">
+                    <button @click="previousPage()" 
+                            :disabled="currentPage === 1"
+                            class="btn btn-primary" 
+                            style="padding: 8px 16px; opacity: currentPage === 1 ? 0.5 : 1;">
+                        ← Zurück
+                    </button>
+                    
+                    <div style="display: flex; gap: 5px; flex-wrap: wrap;">
+                        <template x-for="page in totalPages > 10 ? [1, 2, '...', currentPage - 1, currentPage, currentPage + 1, '...', totalPages - 1, totalPages].filter((p, i, arr) => p > 0 && p <= totalPages && arr.indexOf(p) === i) : Array.from({length: totalPages}, (_, i) => i + 1)" :key="page">
+                            <button x-show="page !== '...'" 
+                                    @click="goToPage(page)" 
+                                    :class="currentPage === page ? 'btn-primary' : 'btn'"
+                                    class="btn" 
+                                    style="padding: 8px 12px; min-width: 40px;"
+                                    :style="currentPage === page ? 'background: #667eea; color: white;' : 'background: white; color: #333;'">
+                                <span x-text="page"></span>
+                            </button>
+                            <span x-show="page === '...'" style="padding: 8px 12px;">...</span>
+                        </template>
+                    </div>
+                    
+                    <button @click="nextPage()" 
+                            :disabled="currentPage === totalPages"
+                            class="btn btn-primary" 
+                            style="padding: 8px 16px; opacity: currentPage === totalPages ? 0.5 : 1;">
+                        Weiter →
+                    </button>
+                </div>
             </div>
         </div>
 
@@ -363,6 +595,9 @@
     </div>
 
     <script>
+        // Store chart instance outside Alpine.js to avoid reactivity issues
+        let chartInstance = null;
+
         function resultsApp() {
             return {
                 loading: true,
@@ -370,7 +605,182 @@
                 analysisId: null,
                 result: null,
                 historyList: null,
-                chart: null,
+                selectedCategory: null,
+                currentPage: 1,
+                entriesPerPage: 100,
+                selectedEntry: null, // Track which entry's details are expanded
+                
+                // Filter states
+                filterDateFrom: '',
+                filterDateTo: '',
+                filterUsername: '',
+                filterSearch: '',
+                filtersApplied: false,
+                
+                // Computed property for available users
+                get availableUsers() {
+                    if (!this.result?.entries) return [];
+                    
+                    const users = new Set();
+                    
+                    this.result.entries.forEach(entry => {
+                        // Method 1: Check if entry has a 'user' field (parsed from JSON logs)
+                        if (entry.user && entry.user.trim() && entry.user !== '' && entry.user !== '--') {
+                            users.add(entry.user.trim());
+                        }
+                        
+                        // Method 2: Extract from raw_line if it's JSON
+                        if (entry.raw_line) {
+                            try {
+                                const json = JSON.parse(entry.raw_line);
+                                if (json.user && json.user.trim() && json.user !== '' && json.user !== '--') {
+                                    users.add(json.user.trim());
+                                }
+                            } catch (e) {
+                                // Not JSON, try pattern matching
+                                const patterns = [
+                                    /\/remote\.php\/dav\/files\/([a-zA-Z0-9_.-]+)/,
+                                    /\/files\/([a-zA-Z0-9_.-]+)\//,
+                                ];
+                                
+                                for (const pattern of patterns) {
+                                    const match = entry.raw_line.match(pattern);
+                                    if (match && match[1]) {
+                                        users.add(match[1]);
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    });
+                    
+                    const userArray = Array.from(users)
+                        .filter(u => u.length >= 3 && u.length <= 50) // Reasonable username length
+                        .sort();
+                    
+                    console.log('Extracted users:', userArray);
+                    return userArray;
+                },
+
+                // Computed property for filtered entries
+                get filteredEntries() {
+                    if (!this.result?.entries) return [];
+                    
+                    let filtered = this.result.entries;
+                    
+                    // Category filter
+                    if (this.selectedCategory) {
+                        filtered = filtered.filter(entry => entry.category === this.selectedCategory);
+                    }
+                    
+                    // Date filters (only if applied)
+                    if (this.filtersApplied) {
+                        if (this.filterDateFrom) {
+                            const fromDate = new Date(this.filterDateFrom);
+                            filtered = filtered.filter(entry => {
+                                const entryDate = new Date(entry.time);
+                                return entryDate >= fromDate;
+                            });
+                        }
+                        
+                        if (this.filterDateTo) {
+                            const toDate = new Date(this.filterDateTo);
+                            toDate.setHours(23, 59, 59, 999); // Include entire day
+                            filtered = filtered.filter(entry => {
+                                const entryDate = new Date(entry.time);
+                                return entryDate <= toDate;
+                            });
+                        }
+                        
+                        // Username filter
+                        if (this.filterUsername) {
+                            const username = this.filterUsername.toLowerCase();
+                            filtered = filtered.filter(entry => {
+                                return entry.message?.toLowerCase().includes(username) ||
+                                       entry.raw_line?.toLowerCase().includes(username);
+                            });
+                        }
+                        
+                        // Search filter (searches in multiple fields)
+                        if (this.filterSearch) {
+                            const search = this.filterSearch.toLowerCase();
+                            filtered = filtered.filter(entry => {
+                                return entry.message?.toLowerCase().includes(search) ||
+                                       entry.source_file?.toLowerCase().includes(search) ||
+                                       entry.raw_line?.toLowerCase().includes(search) ||
+                                       entry.error_code?.toLowerCase().includes(search) ||
+                                       entry.category?.toLowerCase().includes(search) ||
+                                       entry.type?.toLowerCase().includes(search);
+                            });
+                        }
+                    }
+                    
+                    return filtered;
+                },
+
+                // Computed property for paginated entries
+                get paginatedEntries() {
+                    const start = (this.currentPage - 1) * this.entriesPerPage;
+                    const end = start + this.entriesPerPage;
+                    return this.filteredEntries.slice(start, end);
+                },
+
+                // Computed property for total pages
+                get totalPages() {
+                    return Math.ceil(this.filteredEntries.length / this.entriesPerPage);
+                },
+
+                nextPage() {
+                    if (this.currentPage < this.totalPages) {
+                        this.currentPage++;
+                        this.scrollToTable();
+                    }
+                },
+
+                previousPage() {
+                    if (this.currentPage > 1) {
+                        this.currentPage--;
+                        this.scrollToTable();
+                    }
+                },
+
+                goToPage(page) {
+                    this.currentPage = page;
+                    this.scrollToTable();
+                },
+
+                scrollToTable() {
+                    document.querySelector('.entries-table')?.scrollIntoView({ 
+                        behavior: 'smooth', 
+                        block: 'start' 
+                    });
+                },
+                
+                // Filter methods
+                applyFilters() {
+                    this.filtersApplied = true;
+                    this.currentPage = 1; // Reset to first page
+                    console.log('Filters applied:', {
+                        dateFrom: this.filterDateFrom,
+                        dateTo: this.filterDateTo,
+                        username: this.filterUsername,
+                        search: this.filterSearch
+                    });
+                },
+                
+                resetAllFilters() {
+                    this.filterDateFrom = '';
+                    this.filterDateTo = '';
+                    this.filterUsername = '';
+                    this.filterSearch = '';
+                    this.selectedCategory = null;
+                    this.filtersApplied = false;
+                    this.currentPage = 1;
+                },
+                
+                hasActiveFilters() {
+                    return this.filterDateFrom || this.filterDateTo || this.filterUsername || this.filterSearch || this.selectedCategory;
+                },
 
                 async init() {
                     // Check if we have an ID in URL
@@ -394,9 +804,11 @@
 
                         this.result = await response.json();
                         
-                        // Wait for Alpine to render, then create chart
+                        // Wait for Alpine to render, then create chart with additional delay
                         this.$nextTick(() => {
-                            this.createChart();
+                            setTimeout(() => {
+                                this.createChart();
+                            }, 100);
                         });
 
                     } catch (err) {
@@ -425,20 +837,32 @@
                 },
 
                 createChart() {
-                    if (!this.result?.categories) return;
+                    try {
+                        if (!this.result?.categories) {
+                            return;
+                        }
 
-                    const ctx = document.getElementById('categoriesChart');
-                    if (!ctx) return;
+                        const ctx = document.getElementById('categoriesChart');
+                        if (!ctx) {
+                            return;
+                        }
 
-                    const categories = this.result.categories;
-                    const labels = Object.keys(categories);
-                    const data = Object.values(categories);
+                        // Check if Chart is available
+                        if (typeof Chart === 'undefined') {
+                            console.error('Chart.js not available');
+                            return;
+                        }
 
-                    if (this.chart) {
-                        this.chart.destroy();
-                    }
+                        const categories = this.result.categories;
+                        const labels = Object.keys(categories);
+                        const data = Object.values(categories);
 
-                    this.chart = new Chart(ctx, {
+                        if (chartInstance) {
+                            chartInstance.destroy();
+                            chartInstance = null;
+                        }
+
+                    chartInstance = new Chart(ctx, {
                         type: 'bar',
                         data: {
                             labels: labels,
@@ -451,7 +875,9 @@
                                     'rgba(255, 206, 86, 0.7)',
                                     'rgba(75, 192, 192, 0.7)',
                                     'rgba(153, 102, 255, 0.7)',
-                                    'rgba(255, 159, 64, 0.7)'
+                                    'rgba(255, 159, 64, 0.7)',
+                                    'rgba(255, 99, 132, 0.7)',
+                                    'rgba(54, 162, 235, 0.7)'
                                 ],
                                 borderColor: [
                                     'rgba(255, 99, 132, 1)',
@@ -459,25 +885,70 @@
                                     'rgba(255, 206, 86, 1)',
                                     'rgba(75, 192, 192, 1)',
                                     'rgba(153, 102, 255, 1)',
-                                    'rgba(255, 159, 64, 1)'
+                                    'rgba(255, 159, 64, 1)',
+                                    'rgba(255, 99, 132, 1)',
+                                    'rgba(54, 162, 235, 1)'
                                 ],
                                 borderWidth: 2
                             }]
                         },
                         options: {
                             responsive: true,
+                            maintainAspectRatio: false,
+                            animation: {
+                                duration: 1000
+                            },
+                            onClick: (event, activeElements) => {
+                                if (activeElements.length > 0) {
+                                    const index = activeElements[0].index;
+                                    const category = labels[index];
+                                    this.selectedCategory = category;
+                                    this.currentPage = 1; // Reset to first page when filtering
+                                    // Scroll to table
+                                    document.querySelector('.entries-table')?.scrollIntoView({ 
+                                        behavior: 'smooth', 
+                                        block: 'start' 
+                                    });
+                                }
+                            },
                             plugins: {
                                 legend: {
-                                    display: false
+                                    display: true,
+                                    position: 'top'
+                                },
+                                tooltip: {
+                                    enabled: true,
+                                    callbacks: {
+                                        afterLabel: (context) => {
+                                            return 'Klicken zum Filtern';
+                                        }
+                                    }
                                 }
                             },
                             scales: {
                                 y: {
-                                    beginAtZero: true
+                                    beginAtZero: true,
+                                    ticks: {
+                                        precision: 0
+                                    }
+                                },
+                                x: {
+                                    ticks: {
+                                        autoSkip: false,
+                                        maxRotation: 45,
+                                        minRotation: 45
+                                    }
                                 }
                             }
                         }
                     });
+
+                    // Force render
+                    chartInstance.update();
+
+                    } catch (error) {
+                        console.error('Chart creation failed:', error);
+                    }
                 },
 
                 exportJSON() {

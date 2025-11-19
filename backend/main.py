@@ -3,6 +3,7 @@ Nextcloud Log Analyzer - FastAPI Backend
 Simplified Docker Web Deployment
 
 No Celery, No Redis, No PostgreSQL - Just FastAPI + Synchronous Processing
+Version: 1.0.4 - DataStore attributes fixed
 """
 
 import os
@@ -36,6 +37,9 @@ except ImportError:
             "categories": {},
             "entries": []
         }
+
+# Configuration
+MAX_FILE_SIZE = 2 * 1024 * 1024 * 1024  # 2GB in bytes
 
 # Create FastAPI app
 app = FastAPI(
@@ -119,6 +123,12 @@ async def root():
     return FileResponse(STATIC_DIR / "index.html")
 
 
+@app.get("/results.html")
+async def results_page():
+    """Serve results HTML page"""
+    return FileResponse(STATIC_DIR / "results.html")
+
+
 @app.get("/health")
 async def health_check():
     """Health check endpoint"""
@@ -137,7 +147,7 @@ async def upload_and_analyze(
     2. Runs analysis immediately (no background job)
     3. Returns analysis ID
     
-    Max file size: 50MB per file
+    Max file size: 2GB per file
     """
     if not files:
         raise HTTPException(status_code=400, detail="No files uploaded")
@@ -162,11 +172,11 @@ async def upload_and_analyze(
         async with aiofiles.open(file_path, 'wb') as f:
             content = await file.read()
             
-            # Check file size (50MB limit)
-            if len(content) > 50 * 1024 * 1024:
+            # Check file size (2GB limit)
+            if len(content) > MAX_FILE_SIZE:
                 raise HTTPException(
                     status_code=400,
-                    detail=f"File too large: {file.filename} (max 50MB)"
+                    detail=f"File too large: {file.filename} (max 2GB)"
                 )
             
             await f.write(content)

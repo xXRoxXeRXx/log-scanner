@@ -101,8 +101,8 @@ switch ($choice) {
             Write-Host "Press Ctrl+C to stop" -ForegroundColor Yellow
             Write-Host ""
             
-            # Start uvicorn
-            python -m uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000
+            # Start uvicorn with increased limits for large file uploads (2GB)
+            python -m uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000 --limit-max-requests 10000 --timeout-keep-alive 300
         }
     }
     
