@@ -1417,6 +1417,73 @@
                         });
                     }
                     
+                    // Redis connection errors
+                    const redisErrors = this.result.entries?.filter(e => 
+                        e.message?.toLowerCase().includes('redisexception') || 
+                        e.message?.toLowerCase().includes('read error on connection to') && e.message?.toLowerCase().includes('6379')
+                    ).length || 0;
+                    
+                    if (redisErrors > 5) {
+                        const percentage = ((redisErrors / this.result.total_entries) * 100).toFixed(1);
+                        const severity = redisErrors > 100 ? 'critical' : redisErrors > 50 ? 'high' : 'medium';
+                        issues.push({
+                            type: 'redis_connection',
+                            severity: severity,
+                            icon: '🔴',
+                            title: 'Redis Connection/Read Errors',
+                            description: `${redisErrors} Redis-Verbindungsfehler erkannt. Redis-Cluster oder einzelne Nodes sind nicht erreichbar.`,
+                            count: redisErrors,
+                            percentage: percentage,
+                            suggestion: 'Redis-Probleme beheben: 1) Prüfen Sie Redis-Cluster-Status (kubectl get pods -n redis-cluster), 2) Netzwerk-Verbindung zu Redis-Nodes testen, 3) Redis-Memory und Logs prüfen, 4) Timeout-Werte in NextCloud-Konfiguration erhöhen, 5) Bei Cluster: Failover und Node-Erreichbarkeit prüfen.',
+                            filterCriteria: { search: 'RedisException' }
+                        });
+                    }
+                    
+                    // WorkflowEngine boot failures due to Redis
+                    const workflowRedisErrors = this.result.entries?.filter(e => 
+                        e.message?.toLowerCase().includes('could not boot workflowengine') && 
+                        e.message?.toLowerCase().includes('redis')
+                    ).length || 0;
+                    
+                    if (workflowRedisErrors > 5) {
+                        const percentage = ((workflowRedisErrors / this.result.total_entries) * 100).toFixed(1);
+                        const severity = workflowRedisErrors > 50 ? 'high' : 'medium';
+                        issues.push({
+                            type: 'workflow_redis',
+                            severity: severity,
+                            icon: '⚙️',
+                            title: 'WorkflowEngine Boot Failures (Redis)',
+                            description: `${workflowRedisErrors} WorkflowEngine-Start-Fehler durch Redis-Probleme. App kann nicht initialisiert werden.`,
+                            count: workflowRedisErrors,
+                            percentage: percentage,
+                            suggestion: 'WorkflowEngine-Probleme: 1) Redis-Verfügbarkeit sicherstellen, 2) WorkflowEngine App deaktivieren/aktivieren, 3) Redis-Cache leeren (occ cache:clear), 4) Memcache-Konfiguration in config.php prüfen, 5) Alternativ: File-basiertes Caching verwenden.',
+                            filterCriteria: { search: 'workflowengine' }
+                        });
+                    }
+                    
+                    // WebDAV failures due to Redis
+                    const davRedisErrors = this.result.entries?.filter(e => 
+                        e.message?.toLowerCase().includes('sabre') && 
+                        e.message?.toLowerCase().includes('serviceunavailable') && 
+                        e.message?.toLowerCase().includes('redis')
+                    ).length || 0;
+                    
+                    if (davRedisErrors > 3) {
+                        const percentage = ((davRedisErrors / this.result.total_entries) * 100).toFixed(1);
+                        const severity = davRedisErrors > 20 ? 'high' : 'medium';
+                        issues.push({
+                            type: 'dav_redis',
+                            severity: severity,
+                            icon: '📂',
+                            title: 'WebDAV Service Unavailable (Redis)',
+                            description: `${davRedisErrors} WebDAV-Anfragen schlagen fehl durch Redis-Verbindungsprobleme. Sync-Clients betroffen!`,
+                            count: davRedisErrors,
+                            percentage: percentage,
+                            suggestion: 'WebDAV-Redis-Probleme: 1) Redis-Cluster sofort prüfen (kritisch für Sync), 2) Betroffene Clients werden Fehler melden, 3) Temporär: Memcache in config.php deaktivieren, 4) Redis-Failover-Mechanismus überprüfen, 5) Load-Balancing zwischen Redis-Nodes optimieren.',
+                            filterCriteria: { category: 'dav_errors' }
+                        });
+                    }
+                    
                     // Sort by count (most frequent first)
                     issues.sort((a, b) => b.count - a.count);
                     
@@ -1473,6 +1540,15 @@
                             break;
                         case 'locking':
                             this.filterSearch = 'lock';
+                            break;
+                        case 'redis_connection':
+                            this.filterSearch = 'RedisException';
+                            break;
+                        case 'workflow_redis':
+                            this.filterSearch = 'workflowengine';
+                            break;
+                        case 'dav_redis':
+                            this.filterCategory = 'dav_errors';
                             break;
                     }
                     
