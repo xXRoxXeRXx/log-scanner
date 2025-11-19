@@ -1,152 +1,86 @@
-# 🔍 Nextcloud Log Analyzer - Web Edition# 🔍 Nextcloud Log Analyzer v17.4
+# 🔍 Nextcloud Log Analyzer - Web Edition
 
+**Modern web-based log analysis tool for Nextcloud Server and Client logs with intelligent root cause detection.**
 
-
-**Modern web-based log analysis tool for Nextcloud Server and Client logs with intelligent root cause detection.**Eine professionelle Desktop-Anwendung zur Analyse von Nextcloud Server- und Client-Logs mit grafischer Benutzeroberfläche.
-
-
-
-[![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?logo=docker&logoColor=white)](https://www.docker.com/)## ✨ Features
-
+[![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?logo=docker&logoColor=white)](https://www.docker.com/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.109-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
+[![Python](https://img.shields.io/badge/Python-3.13-3776AB?logo=python&logoColor=white)](https://www.python.org/)
+[![Alpine.js](https://img.shields.io/badge/Alpine.js-3.13-8BC0D0?logo=alpine.js&logoColor=white)](https://alpinejs.dev/)
 
-[![Python](https://img.shields.io/badge/Python-3.13-3776AB?logo=python&logoColor=white)](https://www.python.org/)### Kernfunktionen
+---
 
-[![Alpine.js](https://img.shields.io/badge/Alpine.js-3.13-8BC0D0?logo=alpine.js&logoColor=white)](https://alpinejs.dev/)- 📊 **Dual-Format-Support**: Analysiert JSON (Server) und Text (Client) Logs
+## ✨ Features
 
-- 🗜️ **Kompression**: Direkte Verarbeitung von `.gz` / `.gzip` Dateien
+### 🎯 Intelligent Analysis
 
----- 📁 **Multi-File**: Mehrere Log-Dateien gleichzeitig analysieren
-
-- 🔍 **Filter**: Zeit- und User-basierte Filterung für präzise Analysen
-
-## ✨ Features- �️ **Error Codes**: Dedizierte Spalte für HTTP-Codes, Custom-Codes und Exception-Codes
-
-- 🗓️ **DatePicker**: Visueller Kalender für einfache Datumsauswahl
-
-### 🎯 Intelligent Analysis- �🎯 **Intelligente Kategorisierung**: Automatische Fehlerklassifizierung (S3, DAV, PHP, etc.)
-
-- **🤖 Root Cause Detection** - Automatically identifies common issues:- 📖 **Client Story Mode**: Chronologischer Sync-Verlauf mit Ereignissen
-
-  - 🔴 Redis connection errors and cluster failures- 🚀 **High Performance**: Threading für große Dateien (>10 MB)
-
-  - 💾 S3/ObjectStore problems (503 errors, connection issues)- 💾 **Memory-Safe**: Konfigurierbare Speicher-Limits (Standard: 10.000 Einträge/Kategorie)
-
-  - 🌐 WebDAV protocol errors- 🎨 **Moderne GUI**: Intuitive Benutzeroberfläche mit farbiger Kategorisierung
-
+- **🤖 Root Cause Detection** - Automatically identifies common issues:
+  - 🔴 Redis connection errors and cluster failures
+  - 💾 S3/ObjectStore problems (503 errors, connection issues)
+  - 🌐 WebDAV protocol errors
   - 🐘 PHP errors (fopen, TypeError detection)
-
-  - 🔗 File locking problems### Erweiterte Features
-
-  - 📁 Client sync errors (404, 403, network failures)- 🖱️ **Drag & Drop**: Dateien (auch mehrere) einfach in die Anwendung ziehen
-
-- **📊 Click-to-Filter** - Click any root cause card to instantly filter affected logs- 📋 **Clipboard-Support**: Logs direkt aus der Zwischenablage analysieren
-
-- **🎨 Severity Levels** - Color-coded cards (Critical/High/Medium/Low)- 📥 **Export**: Markdown-Tabellen & Excel-Export (inkl. Error Codes)
-
-- **💡 Solution Suggestions** - Specific troubleshooting steps for each issue- ⚙️ **Konfigurierbar**: Alle Limits und Einstellungen anpassbar
-
-- 📝 **Professionelles Logging**: Detaillierte Log-Dateien für Debugging
+  - � File locking problems
+  - 📁 Client sync errors (404, 403, network failures)
+- **📊 Click-to-Filter** - Click any root cause card to instantly filter affected logs
+- **🎨 Severity Levels** - Color-coded cards (Critical/High/Medium/Low)
+- **💡 Solution Suggestions** - Specific troubleshooting steps for each issue
 
 ### 📈 Advanced Features
 
-- **📁 Multi-File Upload** - Analyze up to 15 files simultaneously (2GB limit)## 🏗️ Architektur
-
+- **📁 Multi-File Upload** - Analyze up to 15 files simultaneously (2GB limit per file)
+- **📦 ZIP Archive Support** - Direct upload of Nextcloud client debug.zip files (auto-extracts logs/ directory)
 - **🗜️ Compression Support** - Direct processing of `.gz` / `.gzip` files
-
-- **🔍 Smart Filters** - Date range, username, search text, category filters### Modular & Wartbar
-
+- **🔍 Smart Filters** - Date range, username, search text, category filters
 - **📱 Responsive Design** - Works on desktop, tablet, and mobile
+- **📊 Interactive Charts** - Visual statistics with Chart.js
+- **🎭 Dual Format Support** - JSON (Server) and Text (Client) logs
+- **⚡ High Performance** - FastAPI backend with async processing
+- **🐳 Docker Ready** - One-command deployment
 
-- **📊 Interactive Charts** - Visual statistics with Chart.js```
+### 🎨 Modern UI
 
-- **🎭 Dual Format Support** - JSON (Server) and Text (Client) logslog-scanner/
+- **Alpine.js** - Reactive, lightweight frontend
+- **Smooth Animations** - Scroll effects, hover states, loading indicators
+- **Dark Mode Ready** - Professional color scheme
+- **Pagination** - 100 entries per page for optimal performance
+- **Export Options** - JSON download for external analysis
 
-- **⚡ High Performance** - FastAPI backend with async processing├── log_analyzer_v17.py # Haupt-GUI-Anwendung
+---
 
-- **🐳 Docker Ready** - One-command deployment├── config.py           # Zentrale Konfiguration
+## 🚀 Quick Start
 
-├── data_store.py       # Thread-sichere Datenverwaltung
-
-### 🎨 Modern UI├── server_parser.py    # JSON Server-Log Parser
-
-- **Alpine.js** - Reactive, lightweight frontend├── client_parser.py    # Text Client-Log Parser
-
-- **Smooth Animations** - Scroll effects, hover states, loading indicators├── test_analyzer.py    # Unit Tests
-
-- **Dark Mode Ready** - Professional color scheme├── test_error_codes.py # Error Code Tests
-
-- **Pagination** - 100 entries per page for optimal performance└── requirements.txt    # Dependencies
-
-- **Export Options** - JSON download for external analysis```
-
-
-
----### Design Patterns
-
-- **Separation of Concerns**: Parser, Storage, GUI getrennt
-
-## 🚀 Quick Start- **Thread-Safety**: Lock-basierte Synchronisation
-
-- **Type Hints**: Vollständige Type Annotations
-
-### 🐳 Docker Deployment (Recommended)- **Defensive Programming**: Umfassende Input-Validierung
-
-- **Resource Management**: Context Managers & Limits
+### 🐳 Docker Deployment (Recommended)
 
 **Start the application:**
 
-```bash## 📦 Installation
-
+```bash
 # Using Docker Compose
+docker-compose up -d
 
-docker-compose up -d### Voraussetzungen
-
-- Python 3.8 oder höher
-
-# Or using the start script- Windows, Linux oder macOS
-
+# Or using the start script
 ./start-web.sh    # Linux/Mac
-
-.\start-web.ps1   # Windows### Schnellinstallation
-
+.\start-web.ps1   # Windows
 ```
 
-```bash
-
-**Access the application:**# 1. Repository klonen
-
-```git clone https://github.com/xXRoxXeRXx/log-scanner.git
-
-http://localhost:8000cd log-scanner
+**Access the application:**
 
 ```
+http://localhost:8000
+```
 
-# 2. Dependencies installieren (optional, aber empfohlen)
-
-**Stop the application:**pip install -r requirements.txt
+**Stop the application:**
 
 ```bash
-
-docker-compose down# 3. Anwendung starten
-
-```python log_analyzer_v17.py
-
+docker-compose down
 ```
 
 ### 💻 Local Development
 
-**Hinweis:** Falls `tkinter` fehlt (meist nur Linux):
+**Requirements:**
 
-**Requirements:**```bash
+- Python 3.13+
+- pip
 
-- Python 3.13+# Ubuntu/Debian
-
-- pipsudo apt-get install python3-tk
-
-
-
-**Setup:**# Fedora/RHEL
+**Setup:**
 
 ```bashsudo dnf install python3-tkinter
 
@@ -969,6 +903,13 @@ git push origin feature/amazing-feature
 ---
 
 ## 📝 Changelog
+
+### v2.0.1 (2025-11-19) - ZIP Support & Fixes
+- 📦 ZIP archive support (auto-extract logs/ directory)
+- 🔧 Fixed config.py import errors
+- 🐛 Parser compatibility improvements
+- 📝 Updated documentation
+- ✅ Tested with real client debug.zip (23 files, 730 entries)
 
 ### v2.0.0 (2025-11-19) - Web Edition
 - 🌐 Complete rewrite as web application

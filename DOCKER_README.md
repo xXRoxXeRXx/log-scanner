@@ -32,8 +32,11 @@ http://localhost:8000
 
 ## 📋 Features
 
-- ✅ **File Upload**: Drag & Drop .log/.gz Dateien
+- ✅ **File Upload**: Drag & Drop .log/.gz/.zip Dateien
+- ✅ **ZIP Support**: Automatische Extraktion von Client-Logs aus ZIP-Archiven
 - ✅ **Synchrone Analyse**: Keine Background-Jobs, sofortige Ergebnisse
+- ✅ **Root Cause Analysis**: 15 intelligente Muster-Erkennungen (Redis, S3, WebDAV, PHP, Client-Errors)
+- ✅ **Click-to-Filter**: Direkte Filterung aus Root Cause Cards
 - ✅ **Visualisierung**: Charts mit Chart.js
 - ✅ **Historie**: Alle Analysen gespeichert
 - ✅ **Export**: JSON Download
@@ -145,8 +148,9 @@ docker run -d \
 
 ## 🔒 Security
 
-- **File Size Limit**: 50MB per file
-- **Allowed Extensions**: .log, .txt, .gz only
+- **File Size Limit**: 2GB per file
+- **Allowed Extensions**: .log, .txt, .gz, .zip only
+- **ZIP Extraction**: Only files from `logs/` directory extracted
 - **CORS**: Configure for production domains
 - **Rate Limiting**: Add nginx rate limiting if needed
 
