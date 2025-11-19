@@ -17,12 +17,7 @@ RUN apt-get update && \
 # Copy requirements and install Python dependencies
 COPY requirements.txt .
 RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir \
-    fastapi==0.109.0 \
-    uvicorn[standard]==0.27.0 \
-    python-multipart==0.0.6 \
-    aiofiles==23.2.1 \
-    pydantic==2.5.3
+    pip install --no-cache-dir -r requirements.txt
 
 # Copy application code
 COPY shared/ /app/shared/

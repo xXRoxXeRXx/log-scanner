@@ -1,4 +1,5 @@
-version: '3.8'
+# Nextcloud Log Analyzer - Docker Compose Configuration
+# No version field needed (deprecated in Docker Compose v2)
 
 services:
   log-scanner:
@@ -11,6 +12,8 @@ services:
       # Persistent storage for uploads and results
       - ./uploads:/app/uploads
       - ./results:/app/results
+    env_file:
+      - .env
     environment:
       - PORT=8000
       - PYTHONUNBUFFERED=1

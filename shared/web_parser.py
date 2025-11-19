@@ -4,15 +4,20 @@ Connects existing parsers to FastAPI backend
 """
 
 import sys
+import logging
 from pathlib import Path
 from typing import Dict, List
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Add parent directory to path
 parent_dir = Path(__file__).parent.parent
 sys.path.insert(0, str(parent_dir))
 sys.path.insert(0, str(Path(__file__).parent))
 
-print(f"[DEBUG] Python path: {sys.path[:3]}")
+logger.debug(f"Python path: {sys.path[:3]}")
 
 try:
     # Import parser classes
@@ -22,9 +27,9 @@ try:
     from config import open_file
     
     PARSERS_AVAILABLE = True
-    print("[OK] Parser classes imported successfully!")
+    logger.info("Parser classes imported successfully!")
 except ImportError as e:
-    print(f"[ERROR] Parser import failed: {e}")
+    logger.error(f"Parser import failed: {e}")
     PARSERS_AVAILABLE = False
     ServerLogParser = None
     ClientLogParser = None
@@ -43,7 +48,7 @@ def analyze_log_files(file_paths: List[Path]) -> Dict:
     """
     if not PARSERS_AVAILABLE or not ServerLogParser or not LogDataStore:
         # Fallback: return mock data
-        print(f"⚠️  Parsers not available, using mock data")
+        logger.warning("Parsers not available, using mock data")
         return _mock_analysis(file_paths)
     
     try:
@@ -54,13 +59,13 @@ def analyze_log_files(file_paths: List[Path]) -> Dict:
         server_parser = ServerLogParser(data_store)
         client_parser = ClientLogParser(data_store)
         
-        print(f"[ANALYZE] Analyzing {len(file_paths)} file(s)...")
+        logger.info(f"Analyzing {len(file_paths)} file(s)...")
         
         # Parse each file
         for file_path in file_paths:
             filename = file_path.name.lower()
             
-            print(f"[PARSE] Parsing: {filename}")
+            logger.info(f"Parsing: {filename}")
             
             # Determine file type by reading first few lines
             is_client_log = False
@@ -80,7 +85,7 @@ def analyze_log_files(file_paths: List[Path]) -> Dict:
             # Parse with appropriate parser
             if is_client_log:
                 # Client log
-                print(f"  -> Using ClientLogParser (detected by format)")
+                logger.debug(f"Using ClientLogParser for {filename} (detected by format)")
                 with open_file(str(file_path)) as f:
                     for line_num, line in enumerate(f, 1):
                         line = line.strip()
@@ -88,7 +93,7 @@ def analyze_log_files(file_paths: List[Path]) -> Dict:
                             client_parser.parse_line(line, str(file_path), line_num)
             elif 'client' in filename:
                 # Client log by filename
-                print(f"  -> Using ClientLogParser (by filename)")
+                logger.debug(f"Using ClientLogParser for {filename} (by filename)")
                 with open_file(str(file_path)) as f:
                     for line_num, line in enumerate(f, 1):
                         line = line.strip()
@@ -96,7 +101,7 @@ def analyze_log_files(file_paths: List[Path]) -> Dict:
                             client_parser.parse_line(line, str(file_path), line_num)
             else:
                 # Server log (default)
-                print(f"  -> Using ServerLogParser")
+                logger.debug(f"Using ServerLogParser for {filename}")
                 with open_file(str(file_path)) as f:
                     for line_num, line in enumerate(f, 1):
                         line = line.strip()
@@ -116,9 +121,9 @@ def analyze_log_files(file_paths: List[Path]) -> Dict:
             "client_events": len(data_store._data.get("client_events", []))
         }
         
-        print(f"[STATS] Results: {categories}")
+        logger.info(f"Analysis results: {categories}")
         total_entries = sum(categories.values())
-        print(f"[OK] Total entries: {total_entries}")
+        logger.info(f"Total entries parsed: {total_entries}")
         
         # Combine all entries for display
         all_entries = []
@@ -230,7 +235,7 @@ def analyze_log_files(file_paths: List[Path]) -> Dict:
         # Sort by time (most recent first)
         all_entries.sort(key=lambda x: x.get("time", ""), reverse=True)
         
-        print(f"[RETURN] Total entries to return: {len(all_entries)}")
+        logger.info(f"Returning {len(all_entries)} total entries")
         
         return {
             "status": "completed",
@@ -242,8 +247,8 @@ def analyze_log_files(file_paths: List[Path]) -> Dict:
     
     except Exception as e:
         import traceback
-        print(f"[ERROR] Parser error: {e}")
-        print(traceback.format_exc())
+        logger.error(f"Parser error: {e}")
+        logger.debug(traceback.format_exc())
         return {
             "status": "failed",
             "error_message": f"Parser error: {str(e)}",

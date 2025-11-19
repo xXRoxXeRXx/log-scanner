@@ -4,8 +4,9 @@
 
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?logo=docker&logoColor=white)](https://www.docker.com/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.109-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
-[![Python](https://img.shields.io/badge/Python-3.13-3776AB?logo=python&logoColor=white)](https://www.python.org/)
+[![Python](https://img.shields.io/badge/Python-3.11+-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![Alpine.js](https://img.shields.io/badge/Alpine.js-3.13-8BC0D0?logo=alpine.js&logoColor=white)](https://alpinejs.dev/)
+[![Security](https://img.shields.io/badge/Security-Hardened-green)](./SECURITY.md)
 
 ---
 
@@ -18,11 +19,20 @@
   - 💾 S3/ObjectStore problems (503 errors, connection issues)
   - 🌐 WebDAV protocol errors
   - 🐘 PHP errors (fopen, TypeError detection)
-  - � File locking problems
+  - 🔒 File locking problems
   - 📁 Client sync errors (404, 403, network failures)
 - **📊 Click-to-Filter** - Click any root cause card to instantly filter affected logs
 - **🎨 Severity Levels** - Color-coded cards (Critical/High/Medium/Low)
 - **💡 Solution Suggestions** - Specific troubleshooting steps for each issue
+
+### 🔒 Security (v2.0.1+)
+
+- **🛡️ CORS Protection** - Configurable allowed origins (no more wildcards)
+- **🚦 Rate Limiting** - DoS protection (5 uploads/min, 30 API calls/min)
+- **🔐 API Key Auth** - Optional authentication for production
+- **🗑️ Auto-Cleanup** - Automatic deletion of old results (7 days default)
+- **📏 Size Limits** - Enforced file size and type validation
+- **See [SECURITY.md](./SECURITY.md) for complete security guide**
 
 ### 📈 Advanced Features
 
@@ -77,7 +87,7 @@ docker-compose down
 
 **Requirements:**
 
-- Python 3.13+
+- Python 3.11+ (3.11, 3.12, 3.13 tested)
 - pip
 
 **Setup:**

@@ -1,12 +1,7 @@
 # Nextcloud Log Analyzer Requirements
+# Web Edition v2.0+ (FastAPI + Alpine.js)
 
-# === Desktop App (Tkinter) ===
-# tkinter is included with Python - no pip install needed
-tkinterdnd2>=0.3.0  # For drag & drop support
-openpyxl>=3.0.0     # For Excel export
-tkcalendar>=1.6.0   # For visual datepicker in time filters
-
-# === Web App (Docker) ===
+# === Web Application Dependencies ===
 # FastAPI Web Framework
 fastapi==0.109.0
 uvicorn[standard]==0.27.0
@@ -20,12 +15,19 @@ aiofiles==23.2.1
 # Data Validation
 pydantic==2.5.3
 
+# Rate Limiting
+slowapi==0.1.9
+
 # Testing
 pytest>=7.4.0
 pytest-asyncio==0.23.3
-httpx==0.26.0  # For FastAPI TestClient
+pytest-cov>=4.1.0  # For coverage reports
+httpx==0.24.1  # For FastAPI TestClient (pinned for compatibility)
 
-# Development dependencies
-# pytest-cov>=4.0.0
-# black>=22.0.0
-# flake8>=6.0.0
+# Development & CI/CD (optional, uncomment for local development)
+# flake8>=7.0.0         # Linting
+# pylint>=3.0.0         # Code analysis
+# black>=23.0.0         # Code formatting
+# bandit>=1.7.0         # Security checks
+# safety>=2.0.0         # Dependency vulnerability scanner
+

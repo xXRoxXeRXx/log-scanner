@@ -3,7 +3,7 @@ Nextcloud Log Analyzer - FastAPI Backend
 Simplified Docker Web Deployment
 
 No Celery, No Redis, No PostgreSQL - Just FastAPI + Synchronous Processing
-Version: 1.0.5 - ZIP archive support with automatic extraction
+Version: 1.0.6 - Security hardening and resource cleanup
 """
 
 import os
@@ -12,16 +12,49 @@ import uuid
 import zipfile
 import tempfile
 import shutil
-from datetime import datetime
+import logging
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Dict, List, Optional
 
-from fastapi import FastAPI, File, UploadFile, HTTPException
+from fastapi import FastAPI, File, UploadFile, HTTPException, Security, Depends, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import JSONResponse, FileResponse
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.security import APIKeyHeader
 from pydantic import BaseModel
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 import aiofiles
+
+# Configure logging with rotation
+from logging.handlers import RotatingFileHandler
+
+# Create logs directory if not exists
+Path("logs").mkdir(exist_ok=True)
+
+# Configure rotating file handler (10MB per file, keep 5 backups)
+file_handler = RotatingFileHandler(
+    "logs/app.log",
+    maxBytes=10*1024*1024,  # 10 MB
+    backupCount=5,
+    encoding='utf-8'
+)
+file_handler.setLevel(logging.INFO)
+file_handler.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
+
+# Console handler
+console_handler = logging.StreamHandler()
+console_handler.setLevel(logging.INFO)
+console_handler.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
+
+# Configure root logger
+logging.basicConfig(
+    level=logging.INFO,
+    handlers=[file_handler, console_handler]
+)
+logger = logging.getLogger(__name__)
 
 # Import parsers
 import sys
@@ -41,33 +74,140 @@ except ImportError:
             "entries": []
         }
 
-# Configuration
-MAX_FILE_SIZE = 2 * 1024 * 1024 * 1024  # 2GB in bytes
+# Environment Configuration
+MAX_FILE_SIZE = int(os.getenv("MAX_FILE_SIZE_MB", "2048")) * 1024 * 1024  # Default 2GB
+ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "http://localhost:8000").split(",")
+ENABLE_AUTH = os.getenv("ENABLE_AUTH", "false").lower() == "true"
+API_KEY = os.getenv("API_KEY", "")  # Set in production if ENABLE_AUTH=true
+CLEANUP_ENABLED = os.getenv("CLEANUP_ENABLED", "true").lower() == "true"
+CLEANUP_DAYS = int(os.getenv("CLEANUP_DAYS", "7"))  # Delete results older than 7 days
+
+# Rate Limiting Configuration
+RATE_LIMIT_ENABLED = os.getenv("RATE_LIMIT_ENABLED", "true").lower() == "true"
+RATE_LIMIT_UPLOAD = os.getenv("RATE_LIMIT_UPLOAD", "5/minute")  # 5 uploads per minute per IP
+RATE_LIMIT_API = os.getenv("RATE_LIMIT_API", "30/minute")  # 30 API calls per minute per IP
 
 # Create FastAPI app
 app = FastAPI(
     title="Nextcloud Log Analyzer",
     description="Simple web-based log analysis for Nextcloud",
-    version="1.0.0"
+    version="1.0.6"
 )
 
-# CORS middleware (allow localhost access)
+# Rate Limiting
+limiter = Limiter(key_func=get_remote_address, enabled=RATE_LIMIT_ENABLED)
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+# CORS middleware (secure configuration)
+logger.info(f"CORS allowed origins: {ALLOWED_ORIGINS}")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production: specify exact origins
-    allow_credentials=True,
-    allow_methods=["*"],
+    allow_origins=ALLOWED_ORIGINS,  # ✅ Restricted origins from environment
+    allow_credentials=False,  # ✅ Disabled for security
+    allow_methods=["GET", "POST", "DELETE"],  # ✅ Only needed methods
     allow_headers=["*"],
 )
 
 # Directories
-UPLOAD_DIR = Path("uploads")
-RESULTS_DIR = Path("results")
+UPLOAD_DIR = Path(os.getenv("UPLOAD_DIR", "uploads"))
+RESULTS_DIR = Path(os.getenv("RESULTS_DIR", "results"))
 UPLOAD_DIR.mkdir(exist_ok=True)
 RESULTS_DIR.mkdir(exist_ok=True)
 
 # Mount static files (frontend)
 STATIC_DIR = Path(__file__).parent / "static"
+app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
+
+# === Authentication ===
+
+api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
+
+async def verify_api_key(request: Request, api_key: str = Security(api_key_header)):
+    """
+    Verify API key if authentication is enabled
+    
+    Authentication rules:
+    - Web frontend (Referer header present) → ALWAYS allowed (no auth required)
+    - API clients (no Referer) → Require API key if ENABLE_AUTH=true
+    
+    This allows the web UI to work while protecting API access.
+    """
+    # Check if request is from web frontend (has Referer header)
+    referer = request.headers.get("referer", "")
+    is_web_request = bool(referer)  # Web browsers always send Referer header
+    
+    if is_web_request:
+        return True  # Web frontend always allowed
+    
+    # API client request - check authentication
+    if not ENABLE_AUTH:
+        return True  # Auth disabled for API clients too
+    
+    if not api_key or api_key != API_KEY:
+        logger.warning(f"Unauthorized API access attempt with key: {api_key[:10] if api_key else 'None'}...")
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid or missing API key. Set X-API-Key header for API access."
+        )
+    return True
+
+
+# === Cleanup Functions ===
+
+def cleanup_old_results():
+    """
+    Delete old analysis results and uploaded files
+    Called on startup and can be scheduled
+    """
+    if not CLEANUP_ENABLED:
+        logger.info("Cleanup disabled (CLEANUP_ENABLED=false)")
+        return
+    
+    cutoff_time = datetime.now() - timedelta(days=CLEANUP_DAYS)
+    deleted_results = 0
+    deleted_uploads = 0
+    
+    # Cleanup results
+    for result_file in RESULTS_DIR.glob("*.json"):
+        try:
+            file_mtime = datetime.fromtimestamp(result_file.stat().st_mtime)
+            if file_mtime < cutoff_time:
+                result_file.unlink()
+                deleted_results += 1
+                logger.info(f"Deleted old result: {result_file.name}")
+        except Exception as e:
+            logger.error(f"Error deleting result {result_file}: {e}")
+    
+    # Cleanup uploads
+    for upload_dir in UPLOAD_DIR.iterdir():
+        if upload_dir.is_dir():
+            try:
+                dir_mtime = datetime.fromtimestamp(upload_dir.stat().st_mtime)
+                if dir_mtime < cutoff_time:
+                    shutil.rmtree(upload_dir)
+                    deleted_uploads += 1
+                    logger.info(f"Deleted old upload dir: {upload_dir.name}")
+            except Exception as e:
+                logger.error(f"Error deleting upload dir {upload_dir}: {e}")
+    
+    logger.info(f"Cleanup complete: {deleted_results} results, {deleted_uploads} upload dirs deleted (older than {CLEANUP_DAYS} days)")
+    return {"deleted_results": deleted_results, "deleted_uploads": deleted_uploads}
+
+
+@app.on_event("startup")
+async def startup_event():
+    """Run on application startup"""
+    logger.info("=" * 60)
+    logger.info("Nextcloud Log Analyzer - Starting")
+    logger.info(f"Version: 1.0.6")
+    logger.info(f"Max file size: {MAX_FILE_SIZE / (1024*1024):.0f} MB")
+    logger.info(f"Authentication: {'ENABLED' if ENABLE_AUTH else 'DISABLED'}")
+    logger.info(f"Auto-cleanup: {'ENABLED' if CLEANUP_ENABLED else 'DISABLED'} (retention: {CLEANUP_DAYS} days)")
+    logger.info("=" * 60)
+    
+    # Run initial cleanup
+    cleanup_old_results()
 app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
 
@@ -178,14 +318,31 @@ async def results_page():
 
 
 @app.get("/health")
-async def health_check():
+@limiter.limit(RATE_LIMIT_API)
+async def health_check(request: Request):
     """Health check endpoint"""
     return {"status": "healthy", "timestamp": datetime.now().isoformat()}
 
 
+@app.get("/api/config")
+async def get_config():
+    """
+    Get public configuration for frontend
+    No authentication required - public info only
+    """
+    return {
+        "auth_required": False,  # Web UI never requires auth (only API clients do)
+        "max_file_size_mb": MAX_FILE_SIZE / (1024 * 1024),
+        "version": "1.0.6"
+    }
+
+
 @app.post("/api/upload", response_model=UploadResponse)
+@limiter.limit(RATE_LIMIT_UPLOAD)  # Strict limit for uploads
 async def upload_and_analyze(
-    files: List[UploadFile] = File(..., description="Log files or ZIP archives to analyze")
+    request: Request,
+    files: List[UploadFile] = File(..., description="Log files or ZIP archives to analyze"),
+    authenticated: bool = Depends(verify_api_key)
 ):
     """
     Upload log files and run analysis synchronously
@@ -280,7 +437,8 @@ async def upload_and_analyze(
 
 
 @app.get("/api/results/{analysis_id}", response_model=AnalysisResult)
-async def get_results(analysis_id: str):
+@limiter.limit(RATE_LIMIT_API)
+async def get_results(request: Request, analysis_id: str, authenticated: bool = Depends(verify_api_key)):
     """
     Get analysis results by ID
     
@@ -301,7 +459,8 @@ async def get_results(analysis_id: str):
 
 
 @app.get("/api/results")
-async def list_results():
+@limiter.limit(RATE_LIMIT_API)
+async def list_results(request: Request, authenticated: bool = Depends(verify_api_key)):
     """List all available analysis results"""
     results = []
     
@@ -327,7 +486,8 @@ async def list_results():
 
 
 @app.delete("/api/results/{analysis_id}")
-async def delete_result(analysis_id: str):
+@limiter.limit(RATE_LIMIT_API)
+async def delete_result(request: Request, analysis_id: str, authenticated: bool = Depends(verify_api_key)):
     """Delete an analysis result"""
     result_file = RESULTS_DIR / f"{analysis_id}.json"
     upload_dir = UPLOAD_DIR / analysis_id
@@ -340,11 +500,12 @@ async def delete_result(analysis_id: str):
     
     # Delete result file
     result_file.unlink()
+    logger.info(f"Deleted result: {analysis_id}")
     
     # Delete uploaded files
     if upload_dir.exists():
-        import shutil
         shutil.rmtree(upload_dir)
+        logger.info(f"Deleted upload directory: {analysis_id}")
     
     return {"message": f"Analysis {analysis_id} deleted"}
 
