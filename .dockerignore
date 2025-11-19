@@ -39,6 +39,7 @@ Thumbs.db
 # Application specific
 uploads/
 results/
+
 *.log
 *.gz
 *.zip
