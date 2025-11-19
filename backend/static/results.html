@@ -280,40 +280,16 @@
                     </div>
                     <div class="stat-card">
                         <div class="stat-value" x-text="result?.total_entries || 0"></div>
-                        <div class="stat-label">Einträge</div>
+                        <div class="stat-label">Gesamt Einträge</div>
                     </div>
-                    <div class="stat-card">
-                        <div class="stat-value" x-text="result?.categories?.s3_errors || 0"></div>
-                        <div class="stat-label">S3 Errors</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-value" x-text="result?.categories?.dav_errors || 0"></div>
-                        <div class="stat-label">DAV Errors</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-value" x-text="result?.categories?.objectstore_errors || 0"></div>
-                        <div class="stat-label">ObjectStore Errors</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-value" x-text="result?.categories?.php_errors || 0"></div>
-                        <div class="stat-label">PHP Errors</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-value" x-text="result?.categories?.other_errors || 0"></div>
-                        <div class="stat-label">Andere Errors</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-value" x-text="result?.categories?.server_warnings || 0"></div>
-                        <div class="stat-label">Warnings</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-value" x-text="result?.categories?.server_info || 0"></div>
-                        <div class="stat-label">Server Info</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-value" x-text="result?.categories?.client_errors || 0"></div>
-                        <div class="stat-label">Client Errors</div>
-                    </div>
+                    
+                    <!-- Dynamic category cards - only show if > 0 -->
+                    <template x-for="[category, count] in Object.entries(result?.categories || {}).filter(([k,v]) => v > 0)" :key="category">
+                        <div class="stat-card">
+                            <div class="stat-value" x-text="count"></div>
+                            <div class="stat-label" x-text="getCategoryLabel(category)"></div>
+                        </div>
+                    </template>
                 </div>
 
                 <div class="actions">
@@ -781,6 +757,21 @@
                 hasActiveFilters() {
                     return this.filterDateFrom || this.filterDateTo || this.filterUsername || this.filterSearch || this.selectedCategory;
                 },
+                
+                getCategoryLabel(category) {
+                    const labels = {
+                        's3_errors': 'S3 Errors',
+                        'dav_errors': 'DAV Errors',
+                        'objectstore_errors': 'ObjectStore Errors',
+                        'php_errors': 'PHP Errors',
+                        'other_errors': 'Andere Errors',
+                        'server_warnings': 'Server Warnings',
+                        'server_info': 'Server Info',
+                        'client_errors': 'Client Errors',
+                        'client_events': 'Client Events'
+                    };
+                    return labels[category] || category;
+                },
 
                 async init() {
                     // Check if we have an ID in URL
@@ -859,8 +850,19 @@
                         }
 
                         const categories = this.result.categories;
-                        const labels = Object.keys(categories);
-                        const data = Object.values(categories);
+                        
+                        // Filter out categories with 0 entries
+                        const filteredCategories = Object.entries(categories)
+                            .filter(([key, value]) => value > 0);
+                        
+                        // If no categories have entries, don't show chart
+                        if (filteredCategories.length === 0) {
+                            console.log('No categories with entries to display');
+                            return;
+                        }
+                        
+                        const labels = filteredCategories.map(([key, value]) => key);
+                        const data = filteredCategories.map(([key, value]) => value);
 
                         if (chartInstance) {
                             chartInstance.destroy();
