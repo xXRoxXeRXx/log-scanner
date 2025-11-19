@@ -170,6 +170,7 @@ class ClientLogParser:
                     "time": timestamp,
                     "type": event_name,
                     "msg": details,
+                    "message": message,  # Store full message for display
                     "source_file": source_file,
                     "line_number": line_number,
                     "raw_line": raw_line.strip()

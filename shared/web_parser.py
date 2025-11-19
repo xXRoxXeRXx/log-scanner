@@ -12,7 +12,7 @@ parent_dir = Path(__file__).parent.parent
 sys.path.insert(0, str(parent_dir))
 sys.path.insert(0, str(Path(__file__).parent))
 
-print(f"🔧 Python path: {sys.path[:3]}")
+print(f"[DEBUG] Python path: {sys.path[:3]}")
 
 try:
     # Import parser classes
@@ -22,9 +22,9 @@ try:
     from config import open_file
     
     PARSERS_AVAILABLE = True
-    print("✅ Parser classes imported successfully!")
+    print("[OK] Parser classes imported successfully!")
 except ImportError as e:
-    print(f"❌ Parser import failed: {e}")
+    print(f"[ERROR] Parser import failed: {e}")
     PARSERS_AVAILABLE = False
     ServerLogParser = None
     ClientLogParser = None
@@ -54,34 +54,49 @@ def analyze_log_files(file_paths: List[Path]) -> Dict:
         server_parser = ServerLogParser(data_store)
         client_parser = ClientLogParser(data_store)
         
-        print(f"🔍 Analyzing {len(file_paths)} file(s)...")
+        print(f"[ANALYZE] Analyzing {len(file_paths)} file(s)...")
         
         # Parse each file
         for file_path in file_paths:
             filename = file_path.name.lower()
             
-            print(f"📄 Parsing: {filename}")
+            print(f"[PARSE] Parsing: {filename}")
             
-            # Determine file type and parse
-            if 'nextcloud' in filename or 'server' in filename:
-                # Server log
-                print(f"  → Using ServerLogParser")
+            # Determine file type by reading first few lines
+            is_client_log = False
+            try:
+                with open_file(str(file_path)) as f:
+                    # Check first 5 lines for client log format
+                    for i, line in enumerate(f):
+                        if i >= 5:
+                            break
+                        # Client logs have format: "2025-11-18 14:17:18:495 [ info nextcloud.gui..."
+                        if '[ info nextcloud.gui' in line or '[ warning nextcloud' in line or '[ debug nextcloud' in line:
+                            is_client_log = True
+                            break
+            except:
+                pass
+            
+            # Parse with appropriate parser
+            if is_client_log:
+                # Client log
+                print(f"  -> Using ClientLogParser (detected by format)")
                 with open_file(str(file_path)) as f:
                     for line_num, line in enumerate(f, 1):
                         line = line.strip()
                         if line:
-                            server_parser.parse_line(line, str(file_path), line_num)
+                            client_parser.parse_line(line, str(file_path), line_num)
             elif 'client' in filename:
-                # Client log
-                print(f"  → Using ClientLogParser")
+                # Client log by filename
+                print(f"  -> Using ClientLogParser (by filename)")
                 with open_file(str(file_path)) as f:
                     for line_num, line in enumerate(f, 1):
                         line = line.strip()
                         if line:
                             client_parser.parse_line(line, str(file_path), line_num)
             else:
-                # Try server parser as default
-                print(f"  → Using ServerLogParser (default)")
+                # Server log (default)
+                print(f"  -> Using ServerLogParser")
                 with open_file(str(file_path)) as f:
                     for line_num, line in enumerate(f, 1):
                         line = line.strip()
@@ -101,9 +116,9 @@ def analyze_log_files(file_paths: List[Path]) -> Dict:
             "client_events": len(data_store._data.get("client_events", []))
         }
         
-        print(f"📊 Results: {categories}")
+        print(f"[STATS] Results: {categories}")
         total_entries = sum(categories.values())
-        print(f"✅ Total entries: {total_entries}")
+        print(f"[OK] Total entries: {total_entries}")
         
         # Combine all entries for display
         all_entries = []
@@ -215,7 +230,7 @@ def analyze_log_files(file_paths: List[Path]) -> Dict:
         # Sort by time (most recent first)
         all_entries.sort(key=lambda x: x.get("time", ""), reverse=True)
         
-        print(f"📝 Total entries to return: {len(all_entries)}")
+        print(f"[RETURN] Total entries to return: {len(all_entries)}")
         
         return {
             "status": "completed",
@@ -227,7 +242,7 @@ def analyze_log_files(file_paths: List[Path]) -> Dict:
     
     except Exception as e:
         import traceback
-        print(f"❌ Parser error: {e}")
+        print(f"[ERROR] Parser error: {e}")
         print(traceback.format_exc())
         return {
             "status": "failed",
