@@ -1334,19 +1334,6 @@
                             filterCriteria: { category: 'dav_errors' }
                         });
                     }
-                        const percentage = ((davCount / this.result.total_entries) * 100).toFixed(1);
-                        const severity = davCount > 500 ? 'high' : 'medium';
-                        issues.push({
-                            type: 'dav',
-                            severity: severity,
-                            icon: '🌐',
-                            title: 'WebDAV-Protokollfehler',
-                            description: `${davCount} WebDAV-Fehler beim Dateizugriff. Clients können nicht richtig auf Dateien zugreifen.`,
-                            count: davCount,
-                            percentage: percentage,
-                            suggestion: 'WebDAV-Fehler sind oft durch Backend-Probleme verursacht. Prüfen Sie: 1) Datei-Locks, 2) Storage-Zugriff, 3) PHP-Timeouts, 4) Apache/Nginx-Konfiguration.'
-                        });
-                    }
                     
                     // PHP errors
                     const phpCount = this.result.categories?.php_errors || 0;
