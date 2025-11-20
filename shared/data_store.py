@@ -5,7 +5,7 @@ from typing import Dict, List, Any, Optional, Callable
 from threading import Lock
 from datetime import datetime
 import logging
-from config import MAX_ENTRIES_PER_CATEGORY
+from config import MAX_ENTRIES_PER_CATEGORY, FUNCTIONAL_CATEGORIES
 
 logger = logging.getLogger(__name__)
 
@@ -26,20 +26,16 @@ class LogDataStore:
         """
         self.max_entries = max_entries_per_category
         self._lock = Lock()
+        
+        # Initialize functional categories from config
         self._data: Dict[str, List[Dict[str, str]]] = {
-            # Server categories
-            "s3_errors": [],
-            "dav_errors": [],
-            "objectstore_errors": [],
-            "php_errors": [],
-            "other_errors": [],
-            "server_warnings": [],
-            "server_info": [],
-            "server_debug": [],
-            # Client categories
-            "client_events": [],
-            "client_errors": []
+            category: [] for category in FUNCTIONAL_CATEGORIES.keys()
         }
+        
+        # Add client categories (not in FUNCTIONAL_CATEGORIES as they're client-side)
+        self._data["client_events"] = []
+        self._data["client_errors"] = []
+        
         self._overflow_counts: Dict[str, int] = {key: 0 for key in self._data.keys()}
         
         # Filters

@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Root Cause Debug Test</title>
+</head>
+<body>
+    <h1>Root Cause Analysis Debug</h1>
+    <div id="output"></div>
+    
+    <script>
+        const analysisId = 'da414224-0d97-4bbe-8334-e3944cebae73';
+        const output = document.getElementById('output');
+        
+        async function testRootCause() {
+            try {
+                output.innerHTML += '<p>🔍 Fetching results...</p>';
+                
+                const response = await fetch(`http://localhost:8000/api/results/${analysisId}`);
+                const result = await response.json();
+                
+                output.innerHTML += `<p>📊 Total entries: ${result.entries?.length || 0}</p>`;
+                output.innerHTML += `<p>📂 Categories: ${JSON.stringify(result.categories)}</p>`;
+                
+                // Simulate the analyzeRootCause logic
+                const issues = [];
+                const totalErrors = result.entries?.length || 0;
+                
+                output.innerHTML += `<p>🔍 Analyzing ${totalErrors} entries...</p>`;
+                
+                if (totalErrors === 0) {
+                    output.innerHTML += '<p style="color: red;">❌ No entries found!</p>';
+                    return;
+                }
+                
+                // Check functional categories
+                const storageCount = result.categories?.storage || 0;
+                const fileSyncCount = result.categories?.file_sync || 0;
+                const phpCount = result.categories?.php_runtime || 0;
+                const databaseCount = result.categories?.database || 0;
+                const authCount = result.categories?.authentication || 0;
+                
+                output.innerHTML += `<p>☁️ Storage: ${storageCount}</p>`;
+                output.innerHTML += `<p>📁 File Sync: ${fileSyncCount}</p>`;
+                output.innerHTML += `<p>🐘 PHP Runtime: ${phpCount}</p>`;
+                output.innerHTML += `<p>🗄️ Database: ${databaseCount}</p>`;
+                output.innerHTML += `<p>🔐 Authentication: ${authCount}</p>`;
+                
+                // Test Storage detection
+                if (storageCount > 50) {
+                    const storageCritical = result.entries.filter(e => 
+                        e.category === 'storage' && e.severity === 'critical'
+                    ).length;
+                    
+                    output.innerHTML += `<p style="color: green;">✅ Storage issue detected! (${storageCount} total, ${storageCritical} critical)</p>`;
+                    issues.push({
+                        type: 'storage',
+                        severity: storageCritical > 100 ? 'critical' : 'high',
+                        title: 'Storage-Probleme',
+                        count: storageCount
+                    });
+                }
+                
+                // Test File Sync detection
+                if (fileSyncCount > 100) {
+                    output.innerHTML += `<p style="color: green;">✅ File Sync issue detected! (${fileSyncCount})</p>`;
+                    issues.push({
+                        type: 'file_sync',
+                        severity: 'high',
+                        title: 'File Sync-Probleme',
+                        count: fileSyncCount
+                    });
+                }
+                
+                // Test PHP Runtime detection
+                if (phpCount > 20) {
+                    output.innerHTML += `<p style="color: green;">✅ PHP Runtime issue detected! (${phpCount})</p>`;
+                    issues.push({
+                        type: 'php_runtime',
+                        severity: 'high',
+                        title: 'PHP Runtime-Fehler',
+                        count: phpCount
+                    });
+                }
+                
+                output.innerHTML += `<p><strong>📊 Total issues found: ${issues.length}</strong></p>`;
+                output.innerHTML += `<pre>${JSON.stringify(issues, null, 2)}</pre>`;
+                
+                if (issues.length === 0) {
+                    output.innerHTML += '<p style="color: red;">❌ No issues detected! Check thresholds!</p>';
+                }
+                
+            } catch (err) {
+                output.innerHTML += `<p style="color: red;">❌ Error: ${err.message}</p>`;
+                console.error(err);
+            }
+        }
+        
+        testRootCause();
+    </script>
+</body>
+</html>

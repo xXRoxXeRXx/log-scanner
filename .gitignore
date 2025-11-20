@@ -69,6 +69,7 @@ desktop.ini
 uploads/        # Uploaded log files (temporary)
 results/        # Analysis results JSON files
 logs/           # Application logs
+dev/
 !logs/.gitkeep  # Keep logs directory structure
 !uploads/.gitkeep  # Keep uploads directory structure
 !results/.gitkeep  # Keep results directory structure

@@ -108,142 +108,39 @@ def analyze_log_files(file_paths: List[Path]) -> Dict:
                         if line:
                             server_parser.parse_line(line, str(file_path), line_num)
         
-        # Extract results from data_store._data
-        categories = {
-            "s3_errors": len(data_store._data.get("s3_errors", [])),
-            "dav_errors": len(data_store._data.get("dav_errors", [])),
-            "objectstore_errors": len(data_store._data.get("objectstore_errors", [])),
-            "php_errors": len(data_store._data.get("php_errors", [])),
-            "other_errors": len(data_store._data.get("other_errors", [])),
-            "server_warnings": len(data_store._data.get("server_warnings", [])),
-            "server_info": len(data_store._data.get("server_info", [])),
-            "client_errors": len(data_store._data.get("client_errors", [])),
-            "client_events": len(data_store._data.get("client_events", []))
-        }
+        # Extract results from data_store._data using FUNCTIONAL_CATEGORIES
+        from config import FUNCTIONAL_CATEGORIES
+        
+        categories = {}
+        for category in FUNCTIONAL_CATEGORIES.keys():
+            categories[category] = len(data_store._data.get(category, []))
+        
+        # Add client categories (not in FUNCTIONAL_CATEGORIES)
+        categories["client_errors"] = len(data_store._data.get("client_errors", []))
+        categories["client_events"] = len(data_store._data.get("client_events", []))
         
         logger.info(f"Analysis results: {categories}")
         total_entries = sum(categories.values())
         logger.info(f"Total entries parsed: {total_entries}")
         
-        # Combine all entries for display
+        # Combine all entries for display dynamically from ALL categories
         all_entries = []
         
-        # Add S3 errors
-        for entry in data_store._data.get("s3_errors", []):
-            all_entries.append({
-                "time": entry.get("time", ""),
-                "type": "ERROR",
-                "message": entry.get("msg", entry.get("message", "")),
-                "category": "s3_errors",
-                "error_code": entry.get("error_code", ""),
-                "source_file": entry.get("source_file", ""),
-                "line_number": entry.get("line_number", 0),
-                "raw_line": entry.get("raw_line", "")
-            })
-        
-        # Add DAV errors
-        for entry in data_store._data.get("dav_errors", []):
-            all_entries.append({
-                "time": entry.get("time", ""),
-                "type": "ERROR",
-                "message": entry.get("msg", entry.get("message", "")),
-                "category": "dav_errors",
-                "error_code": entry.get("error_code", ""),
-                "source_file": entry.get("source_file", ""),
-                "line_number": entry.get("line_number", 0),
-                "raw_line": entry.get("raw_line", "")
-            })
-        
-        # Add ObjectStore errors
-        for entry in data_store._data.get("objectstore_errors", []):
-            all_entries.append({
-                "time": entry.get("time", ""),
-                "type": "ERROR",
-                "message": entry.get("msg", entry.get("message", "")),
-                "category": "objectstore_errors",
-                "error_code": entry.get("error_code", ""),
-                "source_file": entry.get("source_file", ""),
-                "line_number": entry.get("line_number", 0),
-                "raw_line": entry.get("raw_line", "")
-            })
-        
-        # Add PHP errors
-        for entry in data_store._data.get("php_errors", []):
-            all_entries.append({
-                "time": entry.get("time", ""),
-                "type": "ERROR",
-                "message": entry.get("msg", entry.get("message", "")),
-                "category": "php_errors",
-                "error_code": entry.get("error_code", ""),
-                "source_file": entry.get("source_file", ""),
-                "line_number": entry.get("line_number", 0),
-                "raw_line": entry.get("raw_line", "")
-            })
-        
-        # Add other errors
-        for entry in data_store._data.get("other_errors", []):
-            all_entries.append({
-                "time": entry.get("time", ""),
-                "type": "ERROR",
-                "message": entry.get("msg", entry.get("message", "")),
-                "category": "other_errors",
-                "error_code": entry.get("error_code", ""),
-                "source_file": entry.get("source_file", ""),
-                "line_number": entry.get("line_number", 0),
-                "raw_line": entry.get("raw_line", "")
-            })
-        
-        # Add warnings (all entries)
-        for entry in data_store._data.get("server_warnings", []):
-            all_entries.append({
-                "time": entry.get("time", ""),
-                "type": "WARNING",
-                "message": entry.get("msg", entry.get("message", "")),
-                "category": "server_warnings",
-                "error_code": entry.get("error_code", ""),
-                "source_file": entry.get("source_file", ""),
-                "line_number": entry.get("line_number", 0),
-                "raw_line": entry.get("raw_line", "")
-            })
-        
-        # Add server info entries
-        for entry in data_store._data.get("server_info", []):
-            all_entries.append({
-                "time": entry.get("time", ""),
-                "type": "INFO",
-                "message": entry.get("msg", entry.get("message", "")),
-                "category": "server_info",
-                "error_code": entry.get("error_code", ""),
-                "source_file": entry.get("source_file", ""),
-                "line_number": entry.get("line_number", 0),
-                "raw_line": entry.get("raw_line", "")
-            })
-        
-        # Add client errors
-        for entry in data_store._data.get("client_errors", []):
-            all_entries.append({
-                "time": entry.get("time", ""),
-                "type": entry.get("type", "ERROR"),  # Use type from parser (WARNING/ERROR/INFO)
-                "message": entry.get("msg", entry.get("message", "")),
-                "category": "client_errors",
-                "error_code": entry.get("error_code", ""),
-                "source_file": entry.get("source_file", ""),
-                "line_number": entry.get("line_number", 0),
-                "raw_line": entry.get("raw_line", "")
-            })
-        
-        # Add client events (story events)
-        for entry in data_store._data.get("client_events", []):
-            all_entries.append({
-                "time": entry.get("time", ""),
-                "type": entry.get("type", "INFO"),
-                "message": entry.get("msg", entry.get("message", "")),
-                "category": "client_events",
-                "error_code": entry.get("error_code", ""),
-                "source_file": entry.get("source_file", ""),
-                "line_number": entry.get("line_number", 0),
-                "raw_line": entry.get("raw_line", "")
-            })
+        for category_name in data_store._data.keys():
+            for entry in data_store._data.get(category_name, []):
+                all_entries.append({
+                    "time": entry.get("time", ""),
+                    "type": entry.get("type", "UNKNOWN"),
+                    "message": entry.get("msg", entry.get("message", "")),
+                    "category": category_name,
+                    "severity": entry.get("severity", "unknown"),
+                    "app": entry.get("app", ""),
+                    "user": entry.get("user", ""),
+                    "error_code": entry.get("error_code", ""),
+                    "source_file": entry.get("source_file", ""),
+                    "line_number": entry.get("line_number", 0),
+                    "raw_line": entry.get("raw_line", "")
+                })
         
         # Sort by time (most recent first)
         all_entries.sort(key=lambda x: x.get("time", ""), reverse=True)
@@ -286,17 +183,17 @@ def _mock_analysis(file_paths: List[Path]) -> Dict:
         except:
             pass
     
+    # Fallback: Return empty result with functional categories
+    from config import FUNCTIONAL_CATEGORIES
+    
+    fallback_categories = {category: 0 for category in FUNCTIONAL_CATEGORIES.keys()}
+    fallback_categories["client_errors"] = 0
+    fallback_categories["client_events"] = 0
+    
     return {
         "status": "completed",
         "file_count": len(file_paths),
         "total_entries": total_lines,
-        "categories": {
-            "s3_errors": 0,
-            "dav_errors": 0,
-            "db_errors": 0,
-            "other_errors": 0,
-            "warnings": 0,
-            "info": total_lines
-        },
+        "categories": fallback_categories,
         "entries": []
     }
