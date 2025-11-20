@@ -112,9 +112,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Directories
-UPLOAD_DIR = Path(os.getenv("UPLOAD_DIR", "uploads"))
-RESULTS_DIR = Path(os.getenv("RESULTS_DIR", "results"))
+# Directories (use absolute paths from project root)
+PROJECT_ROOT = Path(__file__).parent.parent  # Already defined for logs
+UPLOAD_DIR = PROJECT_ROOT / "uploads"
+RESULTS_DIR = PROJECT_ROOT / "results"
 UPLOAD_DIR.mkdir(exist_ok=True)
 RESULTS_DIR.mkdir(exist_ok=True)
 

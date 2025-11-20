@@ -65,9 +65,10 @@ test_*.txt
 Thumbs.db
 desktop.ini
 
-# Project-specific
-uploads/
-results/
-logs/
-backend/uploads/
-backend/results/
+# Project-specific directories (all use project root)
+uploads/        # Uploaded log files (temporary)
+results/        # Analysis results JSON files
+logs/           # Application logs
+!logs/.gitkeep  # Keep logs directory structure
+!uploads/.gitkeep  # Keep uploads directory structure
+!results/.gitkeep  # Keep results directory structure
