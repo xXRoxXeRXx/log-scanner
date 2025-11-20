@@ -967,6 +967,6 @@ See [LICENSE](LICENSE) file for details.
 
 **⭐ If you find this project useful, please give it a star on GitHub! ⭐**
 
-[Report Bug](https://github.com/xXRoxXeRXx/log-scanner/issues) · [Request Feature](https://github.com/xXRoxXeRXx/log-scanner/issues) · [Documentation](DOCKER_README.md)
+[Report Bug](https://github.com/xXRoxXeRXx/log-scanner/issues) · [Request Feature](https://github.com/xXRoxXeRXx/log-scanner/issues) · [Docker Documentation](docs/DOCKER.md)
 
 </div>
