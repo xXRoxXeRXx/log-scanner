@@ -13,7 +13,9 @@ jobs:
     
     strategy:
       matrix:
-        python-version: ['3.11', '3.12', '3.13']
+        # Python 3.13 removed due to pydantic-core incompatibility
+        # See: https://github.com/pydantic/pydantic-core/issues/1024
+        python-version: ['3.11', '3.12']
     
     steps:
     - name: Checkout code

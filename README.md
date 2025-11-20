@@ -87,7 +87,7 @@ docker-compose down
 
 **Requirements:**
 
-- Python 3.11+ (3.11, 3.12, 3.13 tested)
+- Python 3.11+ (3.11, 3.12 tested, **3.13 not yet supported** due to pydantic-core compatibility)
 - pip
 
 **Setup:**
