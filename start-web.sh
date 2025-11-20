@@ -1,4 +1,4 @@
--#!/bin/bash
+#!/bin/bash
 # Quick Start Script for Docker Web Deployment (Linux/macOS)
 
 echo "🚀 Nextcloud Log Analyzer - Docker Setup"
@@ -64,6 +64,7 @@ case $choice in
                 -p 8000:8000 \
                 -v $(pwd)/uploads:/app/uploads \
                 -v $(pwd)/results:/app/results \
+                -v $(pwd)/logs:/app/logs \
                 --name log-scanner \
                 log-scanner
             
@@ -85,8 +86,8 @@ case $choice in
         echo "Starting development mode..."
         echo "Installing dependencies..."
         
-        # Install only web dependencies
-        pip install fastapi uvicorn python-multipart aiofiles pydantic
+        # Install all dependencies from requirements.txt
+        pip install -r requirements.txt
         
         if [ $? -eq 0 ]; then
             echo "Starting server..."
@@ -95,8 +96,8 @@ case $choice in
             echo "Press Ctrl+C to stop"
             echo ""
             
-            # Start uvicorn
-            python -m uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000
+            # Start uvicorn with increased limits for large file uploads (2GB)
+            python -m uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000 --timeout-keep-alive 300
         fi
         ;;
     

@@ -70,6 +70,7 @@ switch ($choice) {
                 -p 8000:8000 `
                 -v ${PWD}/uploads:/app/uploads `
                 -v ${PWD}/results:/app/results `
+                -v ${PWD}/logs:/app/logs `
                 --name log-scanner `
                 log-scanner
             
@@ -91,8 +92,8 @@ switch ($choice) {
         Write-Host "Starting development mode..." -ForegroundColor Cyan
         Write-Host "Installing dependencies..." -ForegroundColor Yellow
         
-        # Install only web dependencies
-        pip install fastapi uvicorn python-multipart aiofiles pydantic
+        # Install all dependencies from requirements.txt
+        pip install -r requirements.txt
         
         if ($LASTEXITCODE -eq 0) {
             Write-Host "Starting server..." -ForegroundColor Cyan
@@ -102,7 +103,7 @@ switch ($choice) {
             Write-Host ""
             
             # Start uvicorn with increased limits for large file uploads (2GB)
-            python -m uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000 --limit-max-requests 10000 --timeout-keep-alive 300
+            python -m uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000 --timeout-keep-alive 300
         }
     }
     
