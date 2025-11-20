@@ -103,7 +103,11 @@ def test_analyze_log_files_categories_structure(tmp_path):
     
     if result["status"] == "completed":
         categories = result["categories"]
-        expected_keys = ["s3_errors", "dav_errors", "db_errors", "other_errors", "warnings", "info"]
+        expected_keys = [
+            "s3_errors", "dav_errors", "objectstore_errors", "php_errors", 
+            "other_errors", "server_warnings", "server_info", 
+            "client_errors", "client_events"
+        ]
         
         for key in expected_keys:
             assert key in categories
@@ -140,7 +144,7 @@ def test_analyze_log_files_error_handling(tmp_path):
 
 
 def test_analyze_log_files_limit_entries(tmp_path):
-    """Test that entries are limited (max 200)"""
+    """Test that all entries are returned (no artificial limit on entries array)"""
     log_file = tmp_path / "large.log"
     
     # Create log with many entries
@@ -153,8 +157,10 @@ def test_analyze_log_files_limit_entries(tmp_path):
     result = analyze_log_files([log_file])
     
     if result["status"] == "completed":
-        # Should be limited to 200 entries
-        assert len(result["entries"]) <= 200
+        # All entries should be returned (no limit on entries array)
+        # Categories may have limits (10000 per category), but entries array has no limit
+        assert len(result["entries"]) == 300, f"Expected 300 entries, got {len(result['entries'])}"
+        assert result["total_entries"] == 300
 
 
 if __name__ == "__main__":

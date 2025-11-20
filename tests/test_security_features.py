@@ -17,6 +17,19 @@ from backend.main import app, cleanup_old_results, RESULTS_DIR, UPLOAD_DIR
 client = TestClient(app)
 
 
+@pytest.fixture(autouse=True)
+def reset_rate_limiter():
+    """Reset rate limiter state between tests"""
+    # Clear the rate limiter's storage before each test
+    from backend.main import limiter
+    if hasattr(limiter, '_storage'):
+        limiter._storage.storage.clear()
+    yield
+    # Clean up after test
+    if hasattr(limiter, '_storage'):
+        limiter._storage.storage.clear()
+
+
 # === CORS Tests ===
 
 def test_cors_preflight():

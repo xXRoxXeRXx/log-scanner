@@ -206,6 +206,19 @@ def analyze_log_files(file_paths: List[Path]) -> Dict:
                 "raw_line": entry.get("raw_line", "")
             })
         
+        # Add server info entries
+        for entry in data_store._data.get("server_info", []):
+            all_entries.append({
+                "time": entry.get("time", ""),
+                "type": "INFO",
+                "message": entry.get("msg", entry.get("message", "")),
+                "category": "server_info",
+                "error_code": entry.get("error_code", ""),
+                "source_file": entry.get("source_file", ""),
+                "line_number": entry.get("line_number", 0),
+                "raw_line": entry.get("raw_line", "")
+            })
+        
         # Add client errors
         for entry in data_store._data.get("client_errors", []):
             all_entries.append({
