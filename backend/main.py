@@ -31,12 +31,15 @@ import aiofiles
 # Configure logging with rotation
 from logging.handlers import RotatingFileHandler
 
-# Create logs directory if not exists
-Path("logs").mkdir(exist_ok=True)
+# Create logs directory in project root (not backend/)
+# Use absolute path to ensure logs always go to the same place
+PROJECT_ROOT = Path(__file__).parent.parent  # Go up from backend/ to project root
+LOG_DIR = PROJECT_ROOT / "logs"
+LOG_DIR.mkdir(exist_ok=True)
 
 # Configure rotating file handler (10MB per file, keep 5 backups)
 file_handler = RotatingFileHandler(
-    "logs/app.log",
+    str(LOG_DIR / "app.log"),  # Absolute path: /project/logs/app.log
     maxBytes=10*1024*1024,  # 10 MB
     backupCount=5,
     encoding='utf-8'

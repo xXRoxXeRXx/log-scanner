@@ -26,8 +26,8 @@ wheels/
 *.log.[0-9][0-9]
 *.log.gz
 *.log.zip
-app.log
-backend/app.log
+logs/          # All logs go into dedicated logs/ directory
+!logs/.gitkeep # Keep the directory in git
 
 # Virtual Environment
 venv/
