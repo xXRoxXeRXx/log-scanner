@@ -103,10 +103,10 @@ def test_analyze_log_files_categories_structure(tmp_path):
     
     if result["status"] == "completed":
         categories = result["categories"]
+        # New functional categories (9 total)
         expected_keys = [
-            "s3_errors", "dav_errors", "objectstore_errors", "php_errors", 
-            "other_errors", "server_warnings", "server_info", 
-            "client_errors", "client_events"
+            "authentication", "file_sync", "storage", "database",
+            "security", "apps", "background_jobs", "php_runtime", "system"
         ]
         
         for key in expected_keys:
