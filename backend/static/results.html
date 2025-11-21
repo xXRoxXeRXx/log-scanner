@@ -4,13 +4,24 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Analyse-Ergebnisse - Nextcloud Log Analyzer</title>
+    
+    <!-- Favicons -->
+    <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
+    <link rel="icon" type="image/png" sizes="16x16" href="/static/favicon-16px.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/static/favicon-32px.png">
+    <link rel="icon" type="image/png" sizes="48x48" href="/static/favicon-48px.png">
+    
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.3/dist/cdn.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <style>
         /* CSS Variables for Light/Dark Theme */
         :root {
-            --bg-gradient-start: #667eea;
-            --bg-gradient-end: #764ba2;
+            /* IONOS Brand Colors */
+            --global--color-ionos-blue: #003d8f;
+            --global--color-dark-midnight: #001b41;
+            
+            --bg-gradient-start: var(--global--color-ionos-blue);
+            --bg-gradient-end: var(--global--color-dark-midnight);
             --container-bg: #ffffff;
             --text-primary: #333333;
             --text-secondary: #666666;
@@ -18,8 +29,8 @@
             --border-color: #e0e0e0;
             --shadow-sm: rgba(0, 0, 0, 0.1);
             --shadow-md: rgba(0, 0, 0, 0.15);
-            --link-color: #667eea;
-            --link-hover: #5568d3;
+            --link-color: var(--global--color-ionos-blue);
+            --link-hover: #004ba3;
             --card-bg: #ffffff;
             --header-bg: #f8f9fa;
             --table-header-bg: #f8f9fa;
@@ -27,16 +38,16 @@
             --table-hover: #f5f5f5;
             --input-bg: #ffffff;
             --input-border: #ddd;
-            --button-bg: #667eea;
-            --button-hover: #5568d3;
+            --button-bg: var(--global--color-ionos-blue);
+            --button-hover: #004ba3;
             --danger-bg: #dc3545;
             --danger-hover: #c82333;
             --stat-bg: #f8f9fa;
         }
         
         [data-theme="dark"] {
-            --bg-gradient-start: #1a1a2e;
-            --bg-gradient-end: #16213e;
+            --bg-gradient-start: var(--global--color-dark-midnight);
+            --bg-gradient-end: #000a1f;
             --container-bg: #0f3460;
             --text-primary: #e4e4e4;
             --text-secondary: #b8b8b8;
@@ -69,7 +80,7 @@
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background: linear-gradient(135deg, var(--bg-gradient-start) 0%, var(--bg-gradient-end) 100%);
+            background: linear-gradient(to right, var(--global--color-ionos-blue), var(--global--color-dark-midnight));
             min-height: 100vh;
             padding: 20px;
         }
@@ -503,7 +514,7 @@
 
         /* Download Button Styles */
         .download-btn {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, var(--global--color-ionos-blue) 0%, var(--global--color-dark-midnight) 100%);
             color: white;
             border: none;
             border-radius: 8px;
@@ -519,17 +530,21 @@
 
         .download-btn:hover {
             transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+            box-shadow: 0 4px 12px rgba(0, 61, 143, 0.4);
         }
     </style>
 </head>
 <body>
-    <!-- Theme Toggle Button -->
-    <button class="theme-toggle" @click="toggleTheme()" :aria-label="darkMode ? 'Switch to light mode' : 'Switch to dark mode'">
-        <span x-text="darkMode ? '☀️' : '🌙'"></span>
-    </button>
-    
     <div class="container" x-data="resultsApp()" x-init="init()">
+        <!-- Theme Toggle Button - Inside Alpine context -->
+        <button class="theme-toggle" @click="toggleTheme()" :aria-label="darkMode ? 'Switch to light mode' : 'Switch to dark mode'">
+            <span x-text="darkMode ? '☀️' : '🌙'"></span>
+        </button>
+        
+        <!-- Logo Header - Inside Container, Above All Content -->
+        <div style="margin-bottom: 30px;">
+            <img src="/static/logo_ionos.png" alt="IONOS Logo" style="max-width: 150px; height: auto;">
+        </div>
         
         <!-- Loading State -->
         <div class="loading" x-show="loading">

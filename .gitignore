@@ -67,9 +67,8 @@ desktop.ini
 
 # Project-specific directories (all use project root)
 uploads/        # Uploaded log files (temporary)
-results/        # Analysis results JSON files
-logs/           # Application logs
+results/*       # Analysis results JSON files
+!results/.gitkeep  # Keep results directory structure
 dev/
 !logs/.gitkeep  # Keep logs directory structure
 !uploads/.gitkeep  # Keep uploads directory structure
-!results/.gitkeep  # Keep results directory structure
