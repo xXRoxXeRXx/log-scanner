@@ -71,6 +71,29 @@ def test_upload_valid_log_file(tmp_path):
     assert data["file_count"] == 1
 
 
+def test_upload_rotated_log_files(tmp_path):
+    """Test upload with rotated log files (.log.1, .log.2, .log.gz, etc.)"""
+    # Test different log file formats
+    test_files = [
+        ("nextcloud.log", '{"level":3,"message":"Error 1"}'),
+        ("nextcloud.log.1", '{"level":3,"message":"Error 2"}'),
+        ("nextcloud.log.2", '{"level":3,"message":"Error 3"}'),
+        ("app.log.gz", '{"level":3,"message":"Error 4"}'),
+    ]
+    
+    for filename, content in test_files:
+        log_file = tmp_path / filename
+        log_file.write_text(content)
+        
+        with open(log_file, 'rb') as f:
+            files = [("files", (filename, f, "text/plain"))]
+            response = client.post("/api/upload", files=files)
+        
+        assert response.status_code == 200, f"Failed for {filename}"
+        data = response.json()
+        assert "analysis_id" in data
+
+
 def test_get_results_not_found():
     """Test getting non-existent result"""
     response = client.get("/api/results/nonexistent-id")

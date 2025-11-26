@@ -259,7 +259,8 @@ def extract_zip_logs(zip_path: Path, extract_dir: Path) -> List[Path]:
                 if file_info.startswith('logs/') and not file_info.endswith('/'):
                     # Check if it's a log file
                     filename = Path(file_info).name
-                    if filename.endswith(('.log', '.txt', '.gz', '.log.0', '.log.1', '.log.2', '.log.3', '.log.4', '.log.5')):
+                    # Allow .log*, .txt, .gz files
+                    if filename.endswith(('.txt', '.gz')) or '.log' in filename:
                         # Extract to analysis directory
                         extract_path = extract_dir / filename
                         with zip_ref.open(file_info) as source:
@@ -276,7 +277,7 @@ def extract_zip_logs(zip_path: Path, extract_dir: Path) -> List[Path]:
         print(f"[WARNING] No log files found in ZIP: {zip_path}")
         raise HTTPException(
             status_code=400, 
-            detail="No log files found in ZIP archive. Expected files in 'logs/' directory with extensions: .log, .txt, .gz"
+            detail="No log files found in ZIP archive. Expected files in 'logs/' directory with extensions: .log*, .txt, .gz"
         )
     
     print(f"[ZIP] Extracted {len(log_files)} log files from {zip_path.name}")
@@ -358,7 +359,7 @@ async def upload_and_analyze(
     4. Returns analysis ID
     
     Supported formats:
-    - Direct log files: .log, .txt, .gz
+    - Direct log files: .log* (including .log.1, .log.gz, etc.), .txt, .gz
     - ZIP archives: .zip (will extract files from logs/ directory)
     
     Max file size: 2GB per file
@@ -377,11 +378,15 @@ async def upload_and_analyze(
     for file in files:
         file_lower = file.filename.lower()
         
-        # Check file extension
-        if not file_lower.endswith(('.log', '.txt', '.gz', '.zip')):
+        # Check file extension - allow .log*, .txt, .gz, .zip
+        allowed = (
+            file_lower.endswith(('.txt', '.gz', '.zip')) or 
+            '.log' in file_lower
+        )
+        if not allowed:
             raise HTTPException(
                 status_code=400,
-                detail=f"Invalid file type: {file.filename}. Only .log, .txt, .gz, .zip allowed"
+                detail=f"Invalid file type: {file.filename}. Only .log*, .txt, .gz, .zip allowed"
             )
         
         # Save file
