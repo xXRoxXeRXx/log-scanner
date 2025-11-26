@@ -20,6 +20,11 @@ wheels/
 .installed.cfg
 *.egg
 
+# PyInstaller
+*.spec.bak
+*.manifest
+*.exe.manifest
+
 # Log files (specific patterns to avoid ignoring logger.py, log_utils.py, etc.)
 *.log
 *.log.[0-9]
