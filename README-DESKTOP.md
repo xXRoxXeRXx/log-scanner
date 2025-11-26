@@ -38,14 +38,15 @@ Nextcloud-Log-Analyzer.exe --help   # Hilfe anzeigen
 
 ## 🔨 Build (für Entwickler)
 
-### Voraussetzungen:
+### Voraussetzungen
 
 - **Python 3.11+** ([Download](https://www.python.org/downloads/))
 - **Git** (optional, für Clone)
+- **macOS**: Xcode Command Line Tools (`xcode-select --install`)
 
-### Build-Prozess:
+### Build-Prozess
 
-#### Windows:
+#### Windows
 
 ```batch
 # 1. Repository klonen
@@ -61,7 +62,28 @@ cd dist
 Nextcloud-Log-Analyzer.exe
 ```
 
-#### Linux/Mac:
+#### macOS
+
+```bash
+# 1. Repository klonen
+git clone https://github.com/xXRoxXeRXx/log-scanner.git
+cd log-scanner
+git checkout desktop
+
+# 2. Build-Script ausführbar machen
+chmod +x build.sh
+chmod +x create-macos-icon.sh
+
+# 3. Build ausführen (erstellt automatisch .icns Icon und .app Bundle)
+./build.sh
+
+# 4. Application testen
+open dist/Nextcloud-Log-Analyzer.app
+# oder direkt:
+dist/Nextcloud-Log-Analyzer.app/Contents/MacOS/Nextcloud-Log-Analyzer
+```
+
+#### Linux
 
 ```bash
 # 1. Repository klonen
@@ -98,29 +120,36 @@ pyinstaller --clean nextcloud-log-analyzer.spec
 
 ## 📁 Projekt-Struktur
 
-```
+```plaintext
 log-scanner/
 ├── desktop_main.py              # Desktop Entry Point (Auto-Browser)
-├── nextcloud-log-analyzer.spec  # PyInstaller Config
+├── nextcloud-log-analyzer.spec  # PyInstaller Config (Cross-Platform)
 ├── build.bat                    # Windows Build-Script
-├── build.sh                     # Linux/Mac Build-Script
+├── build.sh                     # macOS/Linux Build-Script
+├── create-macos-icon.sh         # macOS Icon Generator
 ├── requirements-desktop.txt     # Desktop Dependencies
 ├── backend/                     # FastAPI Backend
 │   ├── main.py                 # API Server
 │   └── static/                 # HTML/CSS/JS/Assets
+│       ├── favicon.ico         # Windows Icon
+│       └── favicon.icns        # macOS Icon (auto-generated)
 ├── shared/                      # Shared Logic
 │   ├── config.py
 │   ├── parser.py
 │   └── ...
 └── dist/                        # Build Output
-    └── Nextcloud-Log-Analyzer.exe  # Final Executable
+    ├── Nextcloud-Log-Analyzer.exe        # Windows Executable
+    └── Nextcloud-Log-Analyzer.app/       # macOS Application Bundle
+        └── Contents/
+            └── MacOS/
+                └── Nextcloud-Log-Analyzer  # macOS Binary
 ```
 
 ---
 
 ## ⚙️ Technische Details
 
-### Was wird gebündelt?
+### Was wird gebündelt
 
 - **FastAPI** Server
 - **Uvicorn** ASGI Server
@@ -128,23 +157,28 @@ log-scanner/
 - **Python Runtime** (embedded)
 - **Alle Dependencies**
 
-### Größe:
+### Größe
 
-- **~50-70 MB** Single-File .exe
-- Kann mit UPX auf ~30-40 MB komprimiert werden
+- **Windows:** ~16 MB Single-File .exe
+- **macOS:** ~18 MB .app Bundle (inkl. Framework)
+- **Linux:** ~15 MB Binary
+- Kann mit UPX weiter komprimiert werden
 
-### PyInstaller Spec Features:
+### PyInstaller Spec Features
 
 ```python
 # Aus nextcloud-log-analyzer.spec:
 - Single-File Executable (--onefile)
 - Konsolen-Fenster für Logs (console=True)
-- IONOS Favicon als Icon
+- Platform-Detection (Windows/macOS/Linux)
+- macOS: Automatic .app bundle creation
+- macOS: High-Resolution display support
+- IONOS Favicon als Icon (.ico für Windows, .icns für macOS)
 - UPX Komprimierung aktiviert
 - Alle Static Files gebündelt
 ```
 
-### Security:
+### Security
 
 - ✅ Läuft nur lokal (`127.0.0.1`)
 - ✅ Keine Admin-Rechte nötig

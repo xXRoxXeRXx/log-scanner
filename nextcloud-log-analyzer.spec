@@ -1,14 +1,35 @@
 # -*- mode: python ; coding: utf-8 -*-
 """
 PyInstaller Spec File für Nextcloud Log Analyzer Desktop
-Erstellt eine Single-File .exe ohne Admin-Rechte
+Unterstützt: Windows, macOS, Linux
+Erstellt eine Single-File Executable ohne Admin-Rechte
 """
 
 import sys
+import platform
 from pathlib import Path
 
 # Projekt Root
 project_root = Path(SPECPATH)
+
+# Platform detection
+IS_WINDOWS = platform.system() == 'Windows'
+IS_MACOS = platform.system() == 'Darwin'
+IS_LINUX = platform.system() == 'Linux'
+
+# Icon path based on platform
+icon_file = None
+if IS_WINDOWS:
+    icon_path = project_root / 'backend' / 'static' / 'favicon.ico'
+    if icon_path.exists():
+        icon_file = str(icon_path)
+elif IS_MACOS:
+    icon_path = project_root / 'backend' / 'static' / 'favicon.icns'
+    if icon_path.exists():
+        icon_file = str(icon_path)
+    # Fallback to .ico if .icns not available (PyInstaller converts automatically)
+    elif (project_root / 'backend' / 'static' / 'favicon.ico').exists():
+        icon_file = str(project_root / 'backend' / 'static' / 'favicon.ico')
 
 # Alle Python-Dateien sammeln
 backend_files = []
@@ -102,10 +123,28 @@ exe = EXE(
     runtime_tmpdir=None,
     console=True,  # True = Zeigt Konsole für Logs
     disable_windowed_traceback=False,
-    argv_emulation=False,
+    argv_emulation=IS_MACOS,  # Enable on macOS for drag & drop
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon=str(project_root / 'backend' / 'static' / 'favicon.ico') if (project_root / 'backend' / 'static' / 'favicon.ico').exists() else None,
+    icon=icon_file,
     version_file=None,
 )
+
+# macOS-specific: Create .app bundle
+if IS_MACOS:
+    app = BUNDLE(
+        exe,
+        name='Nextcloud-Log-Analyzer.app',
+        icon=icon_file,
+        bundle_identifier='com.ionos.nextcloud-log-analyzer',
+        info_plist={
+            'CFBundleName': 'Nextcloud Log Analyzer',
+            'CFBundleDisplayName': 'Nextcloud Log Analyzer',
+            'CFBundleVersion': '1.0.0',
+            'CFBundleShortVersionString': '1.0.0',
+            'NSHighResolutionCapable': True,
+            'LSMinimumSystemVersion': '10.13.0',  # macOS High Sierra
+            'NSRequiresAquaSystemAppearance': False,  # Dark Mode support
+        },
+    )
