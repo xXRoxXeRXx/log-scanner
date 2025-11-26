@@ -9,6 +9,9 @@ on:
     branches: [ desktop ]
   workflow_dispatch:  # Manual trigger
 
+permissions:
+  contents: write  # Required for creating releases
+
 jobs:
   build-windows:
     runs-on: windows-latest
