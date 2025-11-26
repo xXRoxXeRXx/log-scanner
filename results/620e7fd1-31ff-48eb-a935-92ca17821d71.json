@@ -1,0 +1,10 @@
+{
+  "status": "failed",
+  "error_message": "Parser error: Not a gzipped file (b'{\"')",
+  "file_count": 1,
+  "total_entries": 0,
+  "categories": {},
+  "entries": [],
+  "id": "620e7fd1-31ff-48eb-a935-92ca17821d71",
+  "timestamp": "2025-11-26T11:18:13.102726"
+}

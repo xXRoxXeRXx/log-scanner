@@ -1,0 +1,164 @@
+name: Build Desktop Executables
+
+on:
+  push:
+    branches: [ desktop ]
+    tags:
+      - 'v*-desktop'
+  pull_request:
+    branches: [ desktop ]
+  workflow_dispatch:  # Manual trigger
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+        
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pyinstaller
+        
+    - name: Build Windows executable
+      run: |
+        pyinstaller --clean nextcloud-log-analyzer.spec
+        
+    - name: Get executable size
+      run: |
+        $size = (Get-Item dist/Nextcloud-Log-Analyzer.exe).Length
+        $sizeMB = [math]::Round($size / 1MB, 2)
+        echo "Windows executable size: $sizeMB MB"
+        
+    - name: Upload Windows artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: Nextcloud-Log-Analyzer-Windows
+        path: dist/Nextcloud-Log-Analyzer.exe
+        retention-days: 30
+
+  build-macos:
+    runs-on: macos-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+        
+    - name: Install dependencies
+      run: |
+        python3 -m pip install --upgrade pip
+        pip3 install -r requirements.txt
+        pip3 install pyinstaller
+        
+    - name: Create macOS icon
+      run: |
+        chmod +x create-macos-icon.sh
+        ./create-macos-icon.sh
+        
+    - name: Build macOS application
+      run: |
+        pyinstaller --clean nextcloud-log-analyzer.spec
+        
+    - name: Get bundle size
+      run: |
+        size=$(du -sh dist/Nextcloud-Log-Analyzer.app | awk '{print $1}')
+        echo "macOS bundle size: $size"
+        
+    - name: Create DMG (optional)
+      run: |
+        # Create a simple disk image
+        hdiutil create -volname "Nextcloud Log Analyzer" \
+          -srcfolder dist/Nextcloud-Log-Analyzer.app \
+          -ov -format UDZO \
+          dist/Nextcloud-Log-Analyzer.dmg
+          
+    - name: Upload macOS artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: Nextcloud-Log-Analyzer-macOS
+        path: |
+          dist/Nextcloud-Log-Analyzer.app
+          dist/Nextcloud-Log-Analyzer.dmg
+        retention-days: 30
+
+  build-linux:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+        
+    - name: Install dependencies
+      run: |
+        python3 -m pip install --upgrade pip
+        pip3 install -r requirements.txt
+        pip3 install pyinstaller
+        
+    - name: Build Linux executable
+      run: |
+        pyinstaller --clean nextcloud-log-analyzer.spec
+        
+    - name: Get executable size
+      run: |
+        size=$(ls -lh dist/Nextcloud-Log-Analyzer | awk '{print $5}')
+        echo "Linux executable size: $size"
+        
+    - name: Upload Linux artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: Nextcloud-Log-Analyzer-Linux
+        path: dist/Nextcloud-Log-Analyzer
+        retention-days: 30
+
+  create-release:
+    needs: [build-windows, build-macos, build-linux]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    
+    steps:
+    - name: Download all artifacts
+      uses: actions/download-artifact@v4
+      
+    - name: Create Release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |
+          Nextcloud-Log-Analyzer-Windows/Nextcloud-Log-Analyzer.exe
+          Nextcloud-Log-Analyzer-macOS/Nextcloud-Log-Analyzer.dmg
+          Nextcloud-Log-Analyzer-Linux/Nextcloud-Log-Analyzer
+        body: |
+          ## Desktop Version Release
+          
+          ### Downloads:
+          - **Windows**: `Nextcloud-Log-Analyzer.exe` (~16 MB)
+          - **macOS**: `Nextcloud-Log-Analyzer.dmg` (~18 MB)
+          - **Linux**: `Nextcloud-Log-Analyzer` (~15 MB)
+          
+          ### Installation:
+          - **Windows**: Einfach .exe herunterladen und starten
+          - **macOS**: DMG öffnen und App in Applications ziehen
+          - **Linux**: Executable herunterladen, `chmod +x` ausführen und starten
+          
+          ### Changelog:
+          See commit history for details.
+          
+        draft: false
+        prerelease: false
