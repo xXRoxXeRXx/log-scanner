@@ -70,10 +70,19 @@ test_*.txt
 Thumbs.db
 desktop.ini
 
-# Project-specific directories (all use project root)
-uploads/        # Uploaded log files (temporary)
+# Project-specific directories
+uploads/*       # Uploaded log files (temporary)
+!uploads/.gitkeep  # Keep uploads directory structure
 results/*       # Analysis results JSON files
 !results/.gitkeep  # Keep results directory structure
-dev/
+logs/*          # Runtime logs
 !logs/.gitkeep  # Keep logs directory structure
-!uploads/.gitkeep  # Keep uploads directory structure
+
+# Backup files
+*.backup
+README*.backup
+
+# Build artifacts (PyInstaller)
+build/
+dist/
+*.spec.bak
