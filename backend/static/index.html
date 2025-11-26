@@ -391,7 +391,7 @@
         </button>
 
         <h1>🔍 Nextcloud Log Analyzer</h1>
-        <p class="subtitle">Upload .log, .gz oder .zip Dateien für Analyse</p>
+        <p class="subtitle">Upload .log* (inkl. rotierte Logs), .gz oder .zip Dateien für Analyse</p>
 
         <!-- Upload Zone -->
         <div class="upload-zone"
@@ -406,13 +406,13 @@
                 <span x-show="dragover" x-text="dragFileCount > 0 ? '📦' + dragFileCount : '📦'"></span>
             </div>
             <div class="upload-text" x-text="dragover ? (dragFileCount > 0 ? dragFileCount + ' Datei(en) ablegen' : 'Dateien ablegen') : 'Dateien hier ablegen oder klicken'"></div>
-            <div class="upload-hint" x-show="!dragover">Unterstützt: .log, .txt, .gz, .zip (max 2GB pro Datei)</div>
+            <div class="upload-hint" x-show="!dragover">Unterstützt: .log* (inkl. .log.1, .log.gz), .txt, .gz, .zip (max 2GB pro Datei)</div>
             
             <input type="file"
                    x-ref="fileInput"
                    @change="handleFiles($event)"
                    multiple
-                   accept=".log,.txt,.gz,.zip"
+                   accept=".log,.log.1,.log.2,.log.gz,.txt,.gz,.zip"
                    style="display: none;">
         </div>
 
@@ -551,14 +551,17 @@
                 },
 
                 addFiles(newFiles) {
-                    // Filter valid files
+                    // Filter valid files - allow any file with .log in name, plus .txt, .gz, .zip
                     const validFiles = newFiles.filter(file => {
-                        const ext = file.name.split('.').pop().toLowerCase();
-                        return ['log', 'txt', 'gz', 'zip'].includes(ext);
+                        const nameLower = file.name.toLowerCase();
+                        return nameLower.includes('.log') || 
+                               nameLower.endsWith('.txt') || 
+                               nameLower.endsWith('.gz') || 
+                               nameLower.endsWith('.zip');
                     });
 
                     if (validFiles.length < newFiles.length) {
-                        this.error = 'Einige Dateien wurden übersprungen (nur .log, .txt, .gz, .zip erlaubt)';
+                        this.error = 'Einige Dateien wurden übersprungen (nur .log*, .txt, .gz, .zip erlaubt)';
                         setTimeout(() => this.error = null, 3000);
                     }
 
