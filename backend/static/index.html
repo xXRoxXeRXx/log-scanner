@@ -453,6 +453,12 @@
                         <span class="progress-text" x-text="uploadProgress + '%'"></span>
                     </div>
                 </div>
+                
+                <!-- Cancel Button -->
+                <button @click="cancelUpload()" 
+                        style="margin-top: 15px; padding: 10px 20px; background: #dc3545; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold;">
+                    ❌ Upload abbrechen
+                </button>
             </div>
             
             <!-- Analysis Phase with Indeterminate Progress -->
@@ -503,6 +509,7 @@
                 success: null,
                 analysisId: null,
                 darkMode: false,
+                xhr: null, // Store XMLHttpRequest for cancellation
 
                 init() {
                     // Load dark mode preference from localStorage
@@ -606,17 +613,30 @@
                         this.files = [];
 
                     } catch (err) {
-                        this.error = err.message || 'Ein Fehler ist aufgetreten';
+                        if (err.message === 'UPLOAD_CANCELLED') {
+                            this.error = 'Upload wurde abgebrochen';
+                        } else {
+                            this.error = err.message || 'Ein Fehler ist aufgetreten';
+                        }
                     } finally {
                         this.loading = false;
                         this.uploadStatus = null;
                         this.uploadProgress = 0;
+                        this.xhr = null;
+                    }
+                },
+
+                cancelUpload() {
+                    if (this.xhr) {
+                        this.xhr.abort();
+                        this.xhr = null;
                     }
                 },
 
                 uploadWithProgress(formData) {
                     return new Promise((resolve, reject) => {
                         const xhr = new XMLHttpRequest();
+                        this.xhr = xhr; // Store for cancellation
 
                         // Upload progress event
                         xhr.upload.addEventListener('progress', (e) => {
@@ -653,6 +673,11 @@
                         // Network error
                         xhr.addEventListener('error', () => {
                             reject(new Error('Netzwerkfehler beim Upload'));
+                        });
+
+                        // Upload aborted
+                        xhr.addEventListener('abort', () => {
+                            reject(new Error('UPLOAD_CANCELLED'));
                         });
 
                         // Timeout
