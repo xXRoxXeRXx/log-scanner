@@ -80,65 +80,79 @@
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background: linear-gradient(to right, var(--global--color-ionos-blue), var(--global--color-dark-midnight));
+            background: linear-gradient(135deg, var(--global--color-ionos-blue) 0%, var(--global--color-dark-midnight) 100%);
             min-height: 100vh;
             padding: 20px;
+            line-height: 1.6;
         }
         
         .theme-toggle {
             position: fixed;
             top: 20px;
             right: 20px;
-            width: 48px;
-            height: 48px;
+            width: 52px;
+            height: 52px;
             border-radius: 50%;
             background: var(--container-bg);
-            border: 2px solid var(--border-color);
+            border: none;
             cursor: pointer;
-            font-size: 20px;
+            font-size: 22px;
             display: flex;
             align-items: center;
             justify-content: center;
-            box-shadow: 0 4px 12px var(--shadow-md);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
             z-index: 1000;
-            transition: all 0.3s ease;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
         
         .theme-toggle:hover {
-            transform: scale(1.1);
-            box-shadow: 0 6px 16px var(--shadow-md);
+            transform: translateY(-2px) scale(1.05);
+            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.2);
+        }
+
+        .theme-toggle:active {
+            transform: translateY(0) scale(0.98);
         }
 
         .container {
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 0 auto;
         }
 
         .header {
             background: var(--container-bg);
-            border-radius: 16px;
-            padding: 30px;
+            border-radius: 20px;
+            padding: 40px;
             margin-bottom: 20px;
             box-shadow: 0 4px 20px var(--shadow-sm);
         }
 
         h1 {
             color: var(--text-primary);
-            margin-bottom: 10px;
-            font-size: 28px;
+            margin-bottom: 12px;
+            font-size: 32px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            line-height: 1.2;
         }
 
         .back-link {
-            display: inline-block;
-            color: var(--link-color);
+            display: inline-flex;
+            align-items: center;
+            color: var(--global--color-ionos-blue);
             text-decoration: none;
-            margin-bottom: 15px;
-            font-size: 14px;
+            margin-bottom: 20px;
+            font-size: 15px;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            padding: 8px 12px;
+            border-radius: 8px;
         }
 
         .back-link:hover {
-            color: var(--link-hover);
-            text-decoration: underline;
+            background: rgba(0, 61, 143, 0.1);
+            color: #004ba3;
+            transform: translateX(-3px);
         }
 
         .stats-grid {
@@ -152,44 +166,64 @@
             background: var(--stat-bg);
             color: var(--text-primary);
             border: 1px solid var(--border-color);
-            padding: 20px;
-            border-radius: 12px;
+            padding: 24px;
+            border-radius: 16px;
             text-align: center;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 2px 8px var(--shadow-sm);
+        }
+
+        .stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 24px var(--shadow-md);
+            border-color: var(--global--color-ionos-blue);
         }
 
         .stat-value {
-            font-size: 32px;
-            font-weight: bold;
-            margin-bottom: 5px;
-            color: var(--link-color);
-        }
+            font-size: 36px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: var(--global--color-ionos-blue);
+            letter-spacing: -0.5px;
         }
 
         .stat-label {
             font-size: 14px;
-            opacity: 0.9;
+            opacity: 0.85;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
         .chart-container {
-            background: white;
-            border-radius: 16px;
-            padding: 30px;
-            margin-bottom: 20px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            background: var(--card-bg);
+            border-radius: 20px;
+            padding: 35px;
+            margin-bottom: 25px;
+            box-shadow: 0 8px 32px var(--shadow-md);
+            border: 1px solid var(--border-color);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .chart-container:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 40px var(--shadow-md);
         }
 
         .chart-title {
-            font-size: 20px;
-            font-weight: 600;
-            color: #333;
-            margin-bottom: 20px;
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 25px;
+            letter-spacing: -0.3px;
         }
 
         .entries-container {
-            background: white;
-            border-radius: 16px;
-            padding: 30px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            background: var(--card-bg);
+            border-radius: 20px;
+            padding: 35px;
+            box-shadow: 0 8px 32px var(--shadow-md);
+            border: 1px solid var(--border-color);
         }
 
         .entries-table {
@@ -199,12 +233,12 @@
         }
 
         .entries-table th {
-            background: #f8f9fa;
+            background: var(--table-header-bg);
             padding: 12px;
             text-align: left;
             font-weight: 600;
-            color: #333;
-            border-bottom: 2px solid #dee2e6;
+            color: var(--text-primary);
+            border-bottom: 2px solid var(--table-border);
             position: sticky;
             top: 0;
             z-index: 10;
@@ -212,16 +246,16 @@
 
         .entries-table td {
             padding: 12px;
-            border-bottom: 1px solid #dee2e6;
+            border-bottom: 1px solid var(--table-border);
             font-size: 14px;
-            color: #666;
+            color: var(--text-secondary);
         }
 
         .entries-table td:first-child {
             font-family: 'Courier New', monospace;
             font-size: 13px;
             white-space: nowrap;
-            color: #495057;
+            color: var(--text-secondary);
         }
 
         .entries-table td:nth-child(3) {
@@ -231,7 +265,246 @@
         }
 
         .entries-table tr:hover {
-            background: #f8f9fa;
+            background: var(--table-hover);
+        }
+
+        /* Table cell border for dark mode */
+        .table-cell-border {
+            border-bottom: 1px solid var(--table-border);
+        }
+
+        /* Detail row styles for dark mode */
+        .detail-row-bg {
+            background: var(--stat-bg) !important;
+        }
+
+        .detail-box {
+            background: var(--card-bg);
+            padding: 15px;
+            border-radius: 8px;
+            border: 2px solid #667eea;
+        }
+
+        .detail-box h4 {
+            margin: 0 0 15px 0;
+            color: #667eea;
+        }
+
+        .detail-box strong {
+            color: var(--text-primary);
+        }
+
+        .detail-box span,
+        .detail-box div {
+            color: var(--text-secondary);
+        }
+
+        /* Multi-Category Filter */
+        .multi-category-container {
+            background: var(--stat-bg);
+            padding: 20px;
+            border-radius: 16px;
+            margin-bottom: 20px;
+            border: 2px solid var(--global--color-ionos-blue);
+            box-shadow: 0 4px 16px var(--shadow-sm);
+        }
+
+        .multi-category-container strong {
+            font-size: 16px;
+            color: var(--global--color-ionos-blue);
+            font-weight: 700;
+        }
+
+        .multi-category-container span {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-left: 10px;
+            font-weight: 500;
+        }
+
+        .category-checkbox-label {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            padding: 12px 16px;
+            background: var(--card-bg);
+            border-radius: 12px;
+            border: 2px solid var(--border-color);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .category-checkbox-label:hover {
+            border-color: var(--global--color-ionos-blue);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px var(--shadow-sm);
+        }
+
+        .category-checkbox-label input {
+            cursor: pointer;
+        }
+
+        .category-checkbox-label span:first-of-type {
+            font-size: 13px;
+            flex: 1;
+            color: var(--text-primary);
+        }
+
+        .category-checkbox-label span:last-of-type {
+            font-size: 12px;
+            color: var(--global--color-ionos-blue);
+            font-weight: 700;
+        }
+
+        /* Quick Filter Styles */
+        .quick-filter-container {
+            background: linear-gradient(135deg, var(--global--color-ionos-blue) 0%, var(--global--color-dark-midnight) 100%);
+            padding: 20px;
+            border-radius: 16px;
+            margin-bottom: 20px;
+            color: white;
+            box-shadow: 0 4px 16px rgba(0, 61, 143, 0.3);
+        }
+
+        .quick-filter-btn {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            padding: 10px 20px;
+            font-size: 14px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.3);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .quick-filter-btn:hover {
+            background: rgba(255,255,255,0.35);
+            border-color: rgba(255,255,255,0.5);
+            transform: translateY(-2px);
+        }
+
+        /* Advanced Filter Section */
+        .advanced-filter-container {
+            background: var(--stat-bg);
+            padding: 20px;
+            border-radius: 16px;
+            margin-bottom: 20px;
+            border: 1px solid var(--border-color);
+        }
+
+        .advanced-filter-container label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .advanced-filter-container input[type="date"],
+        .advanced-filter-container input[type="text"],
+        .advanced-filter-container select {
+            padding: 8px;
+            border: 1px solid var(--input-border);
+            border-radius: 4px;
+            font-size: 14px;
+            background: var(--input-bg);
+            color: var(--text-primary);
+        }
+
+        .advanced-filter-container input[type="text"]::placeholder {
+            color: var(--text-tertiary);
+        }
+
+        .advanced-filter-container select {
+            cursor: pointer;
+        }
+
+        .advanced-filter-container code {
+            background: var(--stat-bg);
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-family: monospace;
+            font-size: 10px;
+            color: var(--text-secondary);
+        }
+
+        .filter-active-display {
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .filter-active-display strong {
+            color: var(--text-primary);
+        }
+
+        .filter-active-display span {
+            color: var(--text-secondary);
+        }
+
+        /* Pagination Styles */
+        .pagination-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 12px;
+            margin-top: 30px;
+            padding: 20px;
+            background: var(--stat-bg);
+            border-radius: 16px;
+            border: 1px solid var(--border-color);
+            flex-wrap: wrap;
+        }
+
+        .pagination-btn {
+            padding: 10px 20px;
+            border: 2px solid var(--border-color);
+            border-radius: 10px;
+            background: var(--card-bg);
+            color: var(--text-primary);
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            min-width: 44px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 4px var(--shadow-sm);
+        }
+
+        .pagination-btn:hover:not(:disabled) {
+            background: var(--global--color-ionos-blue);
+            color: white;
+            border-color: var(--global--color-ionos-blue);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 61, 143, 0.3);
+        }
+
+        .pagination-btn:active:not(:disabled) {
+            transform: translateY(0);
+        }
+
+        .pagination-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .pagination-btn-active {
+            background: var(--global--color-ionos-blue);
+            color: white;
+            border-color: var(--global--color-ionos-blue);
+            box-shadow: 0 4px 12px rgba(0, 61, 143, 0.3);
+        }
+
+        .pagination-pages {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .pagination-ellipsis {
+            padding: 10px 12px;
+            color: var(--text-tertiary);
+            font-weight: 600;
         }
 
         .badge {
@@ -309,19 +582,28 @@
         }
 
         .btn {
-            padding: 10px 20px;
+            padding: 14px 32px;
             border: none;
-            border-radius: 8px;
+            border-radius: 12px;
             cursor: pointer;
-            font-size: 14px;
+            font-size: 15px;
             font-weight: 600;
             text-decoration: none;
             display: inline-block;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            letter-spacing: 0.3px;
         }
 
         .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: var(--global--color-ionos-blue);
             color: white;
+        }
+
+        .btn-primary:hover {
+            background: #004ba3;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 61, 143, 0.3);
         }
 
         .btn-danger {
@@ -329,23 +611,30 @@
             color: white;
         }
 
-        .btn:hover {
-            opacity: 0.9;
+        .btn-danger:hover {
+            background: #e84e5f;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 71, 87, 0.3);
+        }
+
+        .btn:active {
+            transform: translateY(0);
         }
 
         .actions {
-            margin-top: 20px;
+            margin-top: 25px;
             display: flex;
-            gap: 10px;
+            gap: 12px;
         }
 
         /* Root Cause Analysis Styles */
         .root-cause-container {
             background: var(--card-bg);
-            border-radius: 12px;
-            padding: 25px;
-            margin-bottom: 25px;
-            box-shadow: 0 2px 8px var(--shadow-sm);
+            border-radius: 16px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 20px var(--shadow-sm);
+            border: 1px solid var(--border-color);
         }
 
         .root-cause-header h3 {
@@ -469,10 +758,15 @@
             background: var(--stat-bg);
             border-radius: 6px;
             line-height: 1.5;
+            color: var(--text-secondary);
         }
 
         .root-cause-suggestion strong {
             color: var(--text-primary);
+        }
+
+        .root-cause-suggestion span {
+            color: var(--text-secondary);
         }
 
         /* Dark Mode Severity Colors */
@@ -514,23 +808,29 @@
 
         /* Download Button Styles */
         .download-btn {
-            background: linear-gradient(135deg, var(--global--color-ionos-blue) 0%, var(--global--color-dark-midnight) 100%);
+            background: var(--global--color-ionos-blue);
             color: white;
             border: none;
-            border-radius: 8px;
-            padding: 10px 20px;
+            border-radius: 12px;
+            padding: 12px 24px;
             font-size: 14px;
             font-weight: 600;
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             display: inline-flex;
             align-items: center;
-            gap: 5px;
+            gap: 8px;
+            box-shadow: 0 2px 8px rgba(0, 61, 143, 0.2);
         }
 
         .download-btn:hover {
+            background: #004ba3;
             transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0, 61, 143, 0.4);
+            box-shadow: 0 6px 20px rgba(0, 61, 143, 0.4);
+        }
+
+        .download-btn:active {
+            transform: translateY(0);
         }
     </style>
 </head>
@@ -642,30 +942,152 @@
                 </div>
             </div>
 
+            <!-- Timeline Chart NEW -->
+            <div class="chart-container">
+                <div class="chart-title">⏱️ Fehler-Timeline <span style="font-size: 14px; color: #999; font-weight: normal;">(Klicken zum Filtern nach Zeitraum)</span></div>
+                <div style="position: relative; height: 300px; width: 100%;">
+                    <canvas id="timelineChart" style="cursor: pointer;"></canvas>
+                </div>
+            </div>
             <!-- Log Entries Table -->
             <div class="entries-container">
-                <!-- Filter Section -->
-                <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                <!-- Quick Filters Section NEW -->
+                <div class="quick-filter-container">
+                    <div style="margin-bottom: 15px;">
+                        <strong style="font-size: 16px; font-weight: 700;">⚡ Quick Filters</strong>
+                        <span style="font-size: 13px; opacity: 0.9; margin-left: 10px;">Vordefinierte Filter für schnellen Zugriff</span>
+                    </div>
+                    <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                        <button @click="applyQuickFilter('errors')" class="btn quick-filter-btn">
+                            🔴 Nur Errors
+                        </button>
+                        <button @click="applyQuickFilter('warnings')" class="btn quick-filter-btn">
+                            🟡 Nur Warnings
+                        </button>
+                        <button @click="applyQuickFilter('last_hour')" class="btn quick-filter-btn">
+                            ⏰ Letzte Stunde
+                        </button>
+                        <button @click="applyQuickFilter('last_24h')" class="btn quick-filter-btn">
+                            📅 Letzte 24h
+                        </button>
+                        <button @click="applyQuickFilter('critical')" class="btn quick-filter-btn">
+                            💥 Kritisch
+                        </button>
+                        <button @click="applyQuickFilter('with_users')" class="btn quick-filter-btn">
+                            👥 Mit User-Info
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Multi-Category Filter NEW -->
+                <div class="multi-category-container">
+                    <div style="margin-bottom: 10px;">
+                        <strong>📂 Multi-Category Filter</strong>
+                        <span>Mehrere Kategorien gleichzeitig auswählen</span>
+                    </div>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px;">
+                        <template x-for="(count, category) in result.categories" :key="category">
+                            <label class="category-checkbox-label" 
+                                   :style="selectedCategories.includes(category) ? 'border-color: #667eea; background: rgba(102, 126, 234, 0.1);' : ''">
+                                <input type="checkbox" 
+                                       :value="category" 
+                                       x-model="selectedCategories"
+                                       @change="applyFilters()">
+                                <span x-text="category"></span>
+                                <span x-text="count"></span>
+                            </label>
+                        </template>
+                    </div>
+                </div>
+
+                <!-- Filter Breadcrumb Navigation NEW -->
+                <div x-show="hasActiveFilters()" 
+                     style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 12px 15px; border-radius: 8px; margin-bottom: 15px;">
+                    <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                        <span style="color: white; font-size: 13px; font-weight: bold;">🔍 Aktive Filter:</span>
+                        
+                        <!-- Quick Filter Badge -->
+                        <template x-if="quickFilterActive">
+                            <div style="display: inline-flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.25); padding: 5px 10px; border-radius: 20px; font-size: 12px; color: white; backdrop-filter: blur(10px);">
+                                <span x-text="quickFilterActive"></span>
+                                <button @click="quickFilterActive = null; applyFilters();" 
+                                        style="background: transparent; border: none; color: white; cursor: pointer; font-size: 14px; padding: 0; line-height: 1;">
+                                    ✕
+                                </button>
+                            </div>
+                        </template>
+
+                        <!-- Categories Badge -->
+                        <template x-if="selectedCategories.length > 0">
+                            <div style="display: inline-flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.25); padding: 5px 10px; border-radius: 20px; font-size: 12px; color: white; backdrop-filter: blur(10px);">
+                                <span x-text="`📂 ${selectedCategories.length} Kategorie${selectedCategories.length > 1 ? 'n' : ''}`"></span>
+                                <button @click="selectedCategories = []; applyFilters();" 
+                                        style="background: transparent; border: none; color: white; cursor: pointer; font-size: 14px; padding: 0; line-height: 1;">
+                                    ✕
+                                </button>
+                            </div>
+                        </template>
+
+                        <!-- Date Filter Badge -->
+                        <template x-if="filterDateFrom || filterDateTo">
+                            <div style="display: inline-flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.25); padding: 5px 10px; border-radius: 20px; font-size: 12px; color: white; backdrop-filter: blur(10px);">
+                                <span>📅 Datum</span>
+                                <button @click="filterDateFrom = ''; filterDateTo = ''; applyFilters();" 
+                                        style="background: transparent; border: none; color: white; cursor: pointer; font-size: 14px; padding: 0; line-height: 1;">
+                                    ✕
+                                </button>
+                            </div>
+                        </template>
+
+                        <!-- Username Badge -->
+                        <template x-if="filterUsername">
+                            <div style="display: inline-flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.25); padding: 5px 10px; border-radius: 20px; font-size: 12px; color: white; backdrop-filter: blur(10px);">
+                                <span x-text="`👤 ${filterUsername}`"></span>
+                                <button @click="filterUsername = ''; applyFilters();" 
+                                        style="background: transparent; border: none; color: white; cursor: pointer; font-size: 14px; padding: 0; line-height: 1;">
+                                    ✕
+                                </button>
+                            </div>
+                        </template>
+
+                        <!-- Search Badge -->
+                        <template x-if="searchTerm">
+                            <div style="display: inline-flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.25); padding: 5px 10px; border-radius: 20px; font-size: 12px; color: white; backdrop-filter: blur(10px);">
+                                <span x-text="`🔎 ${regexMode ? 'Regex: ' : ''}${searchTerm.substring(0, 20)}${searchTerm.length > 20 ? '...' : ''}`"></span>
+                                <button @click="searchTerm = ''; applyFilters();" 
+                                        style="background: transparent; border: none; color: white; cursor: pointer; font-size: 14px; padding: 0; line-height: 1;">
+                                    ✕
+                                </button>
+                            </div>
+                        </template>
+
+                        <!-- Clear All Button -->
+                        <button @click="clearAllFilters()" 
+                                style="background: rgba(255,255,255,0.35); border: none; color: white; cursor: pointer; padding: 5px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; backdrop-filter: blur(10px); margin-left: auto;">
+                            🗑️ Alle löschen
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Advanced Filter Section -->
+                <div class="advanced-filter-container">
                     <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
                         <!-- Date From -->
                         <div>
-                            <label style="font-size: 12px; color: #666; display: block; margin-bottom: 5px;">Von Datum:</label>
-                            <input type="date" x-model="filterDateFrom" 
-                                   style="padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
+                            <label>Von Datum:</label>
+                            <input type="date" x-model="filterDateFrom">
                         </div>
                         
                         <!-- Date To -->
                         <div>
-                            <label style="font-size: 12px; color: #666; display: block; margin-bottom: 5px;">Bis Datum:</label>
-                            <input type="date" x-model="filterDateTo" 
-                                   style="padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
+                            <label>Bis Datum:</label>
+                            <input type="date" x-model="filterDateTo">
                         </div>
                         
                         <!-- Username Filter -->
                         <div>
-                            <label style="font-size: 12px; color: #666; display: block; margin-bottom: 5px;">Username:</label>
-                            <select x-model="filterUsername" 
-                                    style="padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; width: 200px; cursor: pointer;">
+                            <label>Username:</label>
+                            <select x-model="filterUsername" style="width: 200px;">
                                 <option value="">Alle</option>
                                 <template x-for="user in availableUsers" :key="user">
                                     <option :value="user" x-text="user"></option>
@@ -673,11 +1095,22 @@
                             </select>
                         </div>
                         
-                        <!-- Search Filter -->
-                        <div>
-                            <label style="font-size: 12px; color: #666; display: block; margin-bottom: 5px;">Suche:</label>
-                            <input type="text" x-model="filterSearch" placeholder="Dateiname, Nachricht, etc..."
-                                   style="padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; width: 250px;">
+                        <!-- Search Filter with Regex Toggle -->
+                        <div style="flex: 1; min-width: 300px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                                <label style="margin-bottom: 0;">Suche:</label>
+                                <label style="font-size: 11px; display: flex; align-items: center; gap: 5px; cursor: pointer; color: var(--text-secondary);">
+                                    <input type="checkbox" x-model="regexMode" style="cursor: pointer;">
+                                    <span>🔍 Regex-Modus</span>
+                                </label>
+                            </div>
+                            <input type="text" x-model="filterSearch" 
+                                   :placeholder="regexMode ? 'Regex: (error|warning).*file' : 'Dateiname, Nachricht, etc...'"
+                                   style="width: 100%;"
+                                   :style="regexMode ? 'font-family: monospace; background: #fffbf0; border-color: #ffa500;' : ''">
+                            <div x-show="regexMode" style="font-size: 10px; color: var(--text-tertiary); margin-top: 3px;">
+                                Beispiele: <code>error.*redis</code> | <code>(404|403)</code> | <code>user\d+</code>
+                            </div>
                         </div>
                         
                         <!-- Filter Buttons -->
@@ -692,8 +1125,8 @@
                     </div>
                     
                     <!-- Active Filters Display -->
-                    <div x-show="hasActiveFilters()" style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #ddd;">
-                        <div style="font-size: 12px; color: #666;">
+                    <div x-show="hasActiveFilters()" class="filter-active-display">
+                        <div style="font-size: 12px;">
                             <strong>Aktive Filter:</strong>
                             <span x-show="filterDateFrom" style="margin-left: 10px;">
                                 📅 Von: <strong x-text="filterDateFrom"></strong>
@@ -766,8 +1199,8 @@
                                             <col style="width: 80px;">
                                         </colgroup>
                                         <tr style="cursor: pointer;" @click="selectedEntry = (selectedEntry === entry ? null : entry)">
-                                            <td x-text="entry.time" style="font-size: 12px; padding: 12px 8px 12px 8px; border-bottom: 1px solid #e2e8f0;"></td>
-                                            <td style="padding: 12px 8px 12px 18px; border-bottom: 1px solid #e2e8f0;">
+                                            <td x-text="entry.time" class="table-cell-border" style="font-size: 12px; padding: 12px 8px 12px 8px;"></td>
+                                            <td class="table-cell-border" style="padding: 12px 8px 12px 18px;">
                                                 <span class="badge"
                                                       :class="{
                                                           'badge-error': entry.type === 'ERROR',
@@ -776,21 +1209,22 @@
                                                       }"
                                                       x-text="entry.type"></span>
                                             </td>
-                                            <td style="padding: 12px 8px 12px 18px; border-bottom: 1px solid #e2e8f0;">
+                                            <td class="table-cell-border" style="padding: 12px 8px 12px 18px;">
                                                 <span class="badge" 
                                                       :class="entry.error_code ? 'badge-error' : ''"
                                                       style="font-family: monospace; font-size: 11px;"
                                                       x-text="entry.error_code || '-'"></span>
                                             </td>
-                                            <td style="padding: 12px 18px 12px 18px; border-bottom: 1px solid #e2e8f0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-                                                <span :title="entry.message" x-text="entry.message"></span>
+                                            <td class="table-cell-border" style="padding: 12px 18px; max-width: 500px;">
+                                                <div :title="entry.message" x-text="entry.message" 
+                                                     style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 500px;"></div>
                                             </td>
-                                            <td style="padding: 12px 8px 12px 18px; border-bottom: 1px solid #e2e8f0;">
+                                            <td class="table-cell-border" style="padding: 12px 8px 12px 18px;">
                                                 <span class="badge badge-info" 
                                                       :style="selectedCategory === entry.category ? 'background: #667eea; font-weight: bold;' : ''"
                                                       x-text="entry.category"></span>
                                             </td>
-                                            <td style="padding: 12px 8px; border-bottom: 1px solid #e2e8f0; text-align: center;">
+                                            <td class="table-cell-border" style="padding: 12px 8px; text-align: center;">
                                                 <button class="btn" style="padding: 4px 8px; font-size: 12px; background: #667eea; color: white;" @click.stop="selectedEntry = (selectedEntry === entry ? null : entry)">
                                                     <span x-show="selectedEntry !== entry">👁️</span>
                                                     <span x-show="selectedEntry === entry">✕</span>
@@ -799,10 +1233,10 @@
                                         </tr>
                                         
                                         <!-- Detail Row - shown/hidden with x-show -->
-                                        <tr x-show="selectedEntry === entry" style="background: #f8f9fa;">
+                                        <tr x-show="selectedEntry === entry" class="detail-row-bg">
                                             <td colspan="6" style="padding: 20px;">
-                                                <div style="background: white; padding: 15px; border-radius: 8px; border: 2px solid #667eea;">
-                                                    <h4 style="margin: 0 0 15px 0; color: #667eea;">📋 Details</h4>
+                                                <div class="detail-box">
+                                                    <h4>📋 Details</h4>
                                                     <div style="display: grid; grid-template-columns: auto 1fr; gap: 10px; font-size: 14px;">
                                                         <strong>Zeit:</strong>
                                                         <span x-text="entry.time"></span>
@@ -823,11 +1257,11 @@
                                                         <span x-text="entry.line_number || '-'"></span>
                                                         
                                                         <strong>Nachricht:</strong>
-                                                        <span x-text="entry.message" style="word-break: break-word;"></span>
+                                                        <div x-text="entry.message" style="word-break: break-word; overflow-wrap: break-word; white-space: normal; margin-top: 5px; line-height: 1.5;"></div>
                                                         
-                                                        <strong>Rohe Logzeile:</strong>
+                                                        <strong style="display: block; margin-top: 15px;">Rohe Logzeile:</strong>
                                                         <pre x-text="entry.raw_line || 'Nicht verfügbar'" 
-                                                             style="background: #2d3436; color: #dfe6e9; padding: 10px; border-radius: 4px; overflow-x: auto; margin: 0; font-size: 12px; font-family: 'Courier New', monospace;"></pre>
+                                                             style="background: #2d3436; color: #dfe6e9; padding: 10px; border-radius: 4px; margin: 0; font-size: 11px; font-family: 'Courier New', monospace; white-space: pre-wrap; word-break: break-all; overflow-wrap: anywhere; max-width: 100%; line-height: 1.4;"></pre>
                                                     </div>
                                                 </div>
                                             </td>
@@ -840,33 +1274,28 @@
                 </table>
 
                 <!-- Pagination -->
-                <div x-show="filteredEntries.length > 0 && totalPages > 1" 
-                     style="display: flex; justify-content: center; align-items: center; gap: 10px; margin-top: 20px; flex-wrap: wrap;">
+                <div x-show="filteredEntries.length > 0 && totalPages > 1" class="pagination-container">
                     <button @click="previousPage()" 
                             :disabled="currentPage === 1"
-                            class="btn btn-primary" 
-                            style="padding: 8px 16px; opacity: currentPage === 1 ? 0.5 : 1;">
+                            class="pagination-btn">
                         ← Zurück
                     </button>
                     
-                    <div style="display: flex; gap: 5px; flex-wrap: wrap;">
+                    <div class="pagination-pages">
                         <template x-for="page in totalPages > 10 ? [1, 2, '...', currentPage - 1, currentPage, currentPage + 1, '...', totalPages - 1, totalPages].filter((p, i, arr) => p > 0 && p <= totalPages && arr.indexOf(p) === i) : Array.from({length: totalPages}, (_, i) => i + 1)" :key="page">
                             <button x-show="page !== '...'" 
                                     @click="goToPage(page)" 
-                                    :class="currentPage === page ? 'btn-primary' : 'btn'"
-                                    class="btn" 
-                                    style="padding: 8px 12px; min-width: 40px;"
-                                    :style="currentPage === page ? 'background: #667eea; color: white;' : 'background: white; color: #333;'">
+                                    class="pagination-btn"
+                                    :class="currentPage === page ? 'pagination-btn-active' : ''">
                                 <span x-text="page"></span>
                             </button>
-                            <span x-show="page === '...'" style="padding: 8px 12px;">...</span>
+                            <span x-show="page === '...'" class="pagination-ellipsis">...</span>
                         </template>
                     </div>
                     
                     <button @click="nextPage()" 
                             :disabled="currentPage === totalPages"
-                            class="btn btn-primary" 
-                            style="padding: 8px 16px; opacity: currentPage === totalPages ? 0.5 : 1;">
+                            class="pagination-btn">
                         Weiter →
                     </button>
                 </div>
@@ -931,6 +1360,12 @@
                 filterSearch: '',
                 filtersApplied: false,
                 
+                // NEW: Enhanced filter states
+                selectedCategories: [],  // Multi-category selection
+                regexMode: false,        // Regex search toggle
+                quickFilterActive: null, // Track active quick filter
+                filtersApplied: false,
+                
                 // Computed property for available users
                 get availableUsers() {
                     if (!this.result?.entries) return [];
@@ -982,9 +1417,22 @@
                     
                     let filtered = this.result.entries;
                     
-                    // Category filter
-                    if (this.selectedCategory) {
+                    // NEW: Multi-Category filter (takes precedence over single category)
+                    if (this.selectedCategories.length > 0) {
+                        filtered = filtered.filter(entry => 
+                            this.selectedCategories.includes(entry.category)
+                        );
+                    }
+                    // Category filter (legacy single category)
+                    else if (this.selectedCategory) {
                         filtered = filtered.filter(entry => entry.category === this.selectedCategory);
+                    }
+                    
+                    // NEW: Quick Filter - With Users
+                    if (this.quickFilterActive === 'with_users') {
+                        filtered = filtered.filter(entry => 
+                            entry.user && entry.user.trim() && entry.user !== '--' && entry.user !== ''
+                        );
                     }
                     
                     // Date filters (only if applied)
@@ -1015,17 +1463,44 @@
                             });
                         }
                         
-                        // Search filter (searches in multiple fields)
+                        // NEW: Search filter with Regex support
                         if (this.filterSearch) {
-                            const search = this.filterSearch.toLowerCase();
-                            filtered = filtered.filter(entry => {
-                                return entry.message?.toLowerCase().includes(search) ||
-                                       entry.source_file?.toLowerCase().includes(search) ||
-                                       entry.raw_line?.toLowerCase().includes(search) ||
-                                       entry.error_code?.toLowerCase().includes(search) ||
-                                       entry.category?.toLowerCase().includes(search) ||
-                                       entry.type?.toLowerCase().includes(search);
-                            });
+                            if (this.regexMode) {
+                                try {
+                                    const regex = new RegExp(this.filterSearch, 'i');
+                                    filtered = filtered.filter(entry => {
+                                        return regex.test(entry.message || '') ||
+                                               regex.test(entry.source_file || '') ||
+                                               regex.test(entry.raw_line || '') ||
+                                               regex.test(entry.error_code || '') ||
+                                               regex.test(entry.category || '') ||
+                                               regex.test(entry.type || '');
+                                    });
+                                } catch (e) {
+                                    console.warn('Invalid regex pattern:', e);
+                                    // Fall back to normal search if regex is invalid
+                                    const search = this.filterSearch.toLowerCase();
+                                    filtered = filtered.filter(entry => {
+                                        return entry.message?.toLowerCase().includes(search) ||
+                                               entry.source_file?.toLowerCase().includes(search) ||
+                                               entry.raw_line?.toLowerCase().includes(search) ||
+                                               entry.error_code?.toLowerCase().includes(search) ||
+                                               entry.category?.toLowerCase().includes(search) ||
+                                               entry.type?.toLowerCase().includes(search);
+                                    });
+                                }
+                            } else {
+                                // Normal text search
+                                const search = this.filterSearch.toLowerCase();
+                                filtered = filtered.filter(entry => {
+                                    return entry.message?.toLowerCase().includes(search) ||
+                                           entry.source_file?.toLowerCase().includes(search) ||
+                                           entry.raw_line?.toLowerCase().includes(search) ||
+                                           entry.error_code?.toLowerCase().includes(search) ||
+                                           entry.category?.toLowerCase().includes(search) ||
+                                           entry.type?.toLowerCase().includes(search);
+                                });
+                            }
                         }
                     }
                     
@@ -1088,12 +1563,67 @@
                     this.filterUsername = '';
                     this.filterSearch = '';
                     this.selectedCategory = null;
+                    this.selectedCategories = [];  // NEW: Reset multi-category
+                    this.regexMode = false;         // NEW: Reset regex mode
+                    this.quickFilterActive = null;  // NEW: Reset quick filter
                     this.filtersApplied = false;
                     this.currentPage = 1;
                 },
                 
                 hasActiveFilters() {
-                    return this.filterDateFrom || this.filterDateTo || this.filterUsername || this.filterSearch || this.selectedCategory;
+                    return this.filterDateFrom || this.filterDateTo || this.filterUsername || this.filterSearch || this.selectedCategory || this.selectedCategories.length > 0 || this.quickFilterActive || this.searchTerm;
+                },
+                
+                // Clear all active filters
+                clearAllFilters() {
+                    console.log('🗑️ Clearing all filters');
+                    this.resetAllFilters();
+                    this.searchTerm = '';
+                    this.applyFilters();
+                },
+                
+                // NEW: Quick Filter Methods
+                applyQuickFilter(filterType) {
+                    console.log('🚀 Applying quick filter:', filterType);
+                    
+                    // Reset all filters first
+                    this.resetAllFilters();
+                    this.quickFilterActive = filterType;
+                    
+                    const now = new Date();
+                    
+                    switch(filterType) {
+                        case 'errors':
+                            this.filterSearch = 'error';
+                            break;
+                        
+                        case 'warnings':
+                            this.filterSearch = 'warning';
+                            break;
+                        
+                        case 'last_hour':
+                            const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
+                            this.filterDateFrom = oneHourAgo.toISOString().split('T')[0];
+                            this.filterDateTo = now.toISOString().split('T')[0];
+                            break;
+                        
+                        case 'last_24h':
+                            const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+                            this.filterDateFrom = oneDayAgo.toISOString().split('T')[0];
+                            this.filterDateTo = now.toISOString().split('T')[0];
+                            break;
+                        
+                        case 'critical':
+                            // Filter for critical severity
+                            this.selectedCategories = ['storage', 'database', 'security'];
+                            break;
+                        
+                        case 'with_users':
+                            // Will be filtered in filteredEntries computed property
+                            break;
+                    }
+                    
+                    this.applyFilters();
                 },
                 
                 // Download methods
@@ -1182,6 +1712,12 @@
                     this.darkMode = !this.darkMode;
                     document.documentElement.setAttribute('data-theme', this.darkMode ? 'dark' : 'light');
                     localStorage.setItem('theme', this.darkMode ? 'dark' : 'light');
+                    
+                    // Recreate charts to apply new theme colors
+                    this.$nextTick(() => {
+                        this.createChart();
+                        this.createTimelineChart();
+                    });
                 },
 
                 async init() {
@@ -1219,10 +1755,11 @@
                         // Perform root cause analysis
                         this.analyzeRootCause();
                         
-                        // Wait for Alpine to render, then create chart with additional delay
+                        // Wait for Alpine to render, then create charts with additional delay
                         this.$nextTick(() => {
                             setTimeout(() => {
                                 this.createChart();
+                                this.createTimelineChart();  // NEW: Create timeline chart
                             }, 100);
                         });
 
@@ -1341,7 +1878,10 @@
                             plugins: {
                                 legend: {
                                     display: true,
-                                    position: 'top'
+                                    position: 'top',
+                                    labels: {
+                                        color: getComputedStyle(document.documentElement).getPropertyValue('--text-primary').trim()
+                                    }
                                 },
                                 tooltip: {
                                     enabled: true,
@@ -1356,14 +1896,22 @@
                                 y: {
                                     beginAtZero: true,
                                     ticks: {
-                                        precision: 0
+                                        precision: 0,
+                                        color: getComputedStyle(document.documentElement).getPropertyValue('--text-secondary').trim()
+                                    },
+                                    grid: {
+                                        color: getComputedStyle(document.documentElement).getPropertyValue('--border-color').trim()
                                     }
                                 },
                                 x: {
                                     ticks: {
                                         autoSkip: false,
                                         maxRotation: 45,
-                                        minRotation: 45
+                                        minRotation: 45,
+                                        color: getComputedStyle(document.documentElement).getPropertyValue('--text-secondary').trim()
+                                    },
+                                    grid: {
+                                        color: getComputedStyle(document.documentElement).getPropertyValue('--border-color').trim()
                                     }
                                 }
                             }
@@ -1375,6 +1923,173 @@
 
                     } catch (error) {
                         console.error('Chart creation failed:', error);
+                    }
+                },
+
+                // NEW: Timeline Chart
+                createTimelineChart() {
+                    try {
+                        if (!this.result?.entries) {
+                            console.log('No entries for timeline chart');
+                            return;
+                        }
+
+                        const ctx = document.getElementById('timelineChart');
+                        if (!ctx) {
+                            console.warn('Timeline chart canvas not found');
+                            return;
+                        }
+
+                        if (typeof Chart === 'undefined') {
+                            console.error('Chart.js not available');
+                            return;
+                        }
+
+                        // Group entries by hour
+                        const timeGroups = {};
+                        
+                        this.result.entries.forEach(entry => {
+                            if (!entry.time) return;
+                            
+                            try {
+                                const date = new Date(entry.time);
+                                if (isNaN(date.getTime())) return;
+                                
+                                // Group by hour
+                                const hourKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:00`;
+                                
+                                if (!timeGroups[hourKey]) {
+                                    timeGroups[hourKey] = {
+                                        timestamp: date.setMinutes(0, 0, 0), // Round to hour
+                                        count: 0
+                                    };
+                                }
+                                timeGroups[hourKey].count++;
+                            } catch (e) {
+                                console.warn('Invalid date:', entry.time);
+                            }
+                        });
+
+                        // Sort by timestamp
+                        const sortedGroups = Object.entries(timeGroups)
+                            .map(([label, data]) => ({ label, ...data }))
+                            .sort((a, b) => a.timestamp - b.timestamp);
+
+                        if (sortedGroups.length === 0) {
+                            console.log('No valid timestamps for timeline');
+                            return;
+                        }
+
+                        const labels = sortedGroups.map(g => g.label);
+                        const data = sortedGroups.map(g => g.count);
+
+                        // Destroy existing timeline chart if it exists
+                        if (window.timelineChartInstance) {
+                            window.timelineChartInstance.destroy();
+                        }
+
+                        window.timelineChartInstance = new Chart(ctx, {
+                            type: 'line',
+                            data: {
+                                labels: labels,
+                                datasets: [{
+                                    label: 'Fehler pro Stunde',
+                                    data: data,
+                                    fill: true,
+                                    backgroundColor: 'rgba(102, 126, 234, 0.2)',
+                                    borderColor: 'rgba(102, 126, 234, 1)',
+                                    borderWidth: 2,
+                                    tension: 0.4,
+                                    pointRadius: 4,
+                                    pointHoverRadius: 6,
+                                    pointBackgroundColor: 'rgba(102, 126, 234, 1)',
+                                    pointBorderColor: '#fff',
+                                    pointBorderWidth: 2
+                                }]
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                interaction: {
+                                    mode: 'index',
+                                    intersect: false
+                                },
+                                onClick: (event, activeElements) => {
+                                    if (activeElements.length > 0) {
+                                        const index = activeElements[0].index;
+                                        const timeLabel = labels[index];
+                                        
+                                        // Extract date for filtering
+                                        const datePart = timeLabel.split(' ')[0];
+                                        this.filterDateFrom = datePart;
+                                        this.filterDateTo = datePart;
+                                        this.applyFilters();
+                                        
+                                        // Scroll to entries
+                                        this.$nextTick(() => {
+                                            document.querySelector('.entries-table')?.scrollIntoView({ 
+                                                behavior: 'smooth', 
+                                                block: 'start' 
+                                            });
+                                        });
+                                    }
+                                },
+                                plugins: {
+                                    legend: {
+                                        display: true,
+                                        position: 'top',
+                                        labels: {
+                                            color: getComputedStyle(document.documentElement).getPropertyValue('--text-primary').trim()
+                                        }
+                                    },
+                                    tooltip: {
+                                        enabled: true,
+                                        callbacks: {
+                                            afterLabel: () => 'Klicken zum Filtern'
+                                        }
+                                    }
+                                },
+                                scales: {
+                                    y: {
+                                        beginAtZero: true,
+                                        ticks: {
+                                            precision: 0,
+                                            color: getComputedStyle(document.documentElement).getPropertyValue('--text-secondary').trim()
+                                        },
+                                        title: {
+                                            display: true,
+                                            text: 'Anzahl Fehler',
+                                            color: getComputedStyle(document.documentElement).getPropertyValue('--text-primary').trim()
+                                        },
+                                        grid: {
+                                            color: getComputedStyle(document.documentElement).getPropertyValue('--border-color').trim()
+                                        }
+                                    },
+                                    x: {
+                                        ticks: {
+                                            autoSkip: true,
+                                            maxRotation: 45,
+                                            minRotation: 45,
+                                            maxTicksLimit: 24,
+                                            color: getComputedStyle(document.documentElement).getPropertyValue('--text-secondary').trim()
+                                        },
+                                        grid: {
+                                            color: getComputedStyle(document.documentElement).getPropertyValue('--border-color').trim()
+                                        },
+                                        title: {
+                                            display: true,
+                                            text: 'Zeitpunkt',
+                                            color: getComputedStyle(document.documentElement).getPropertyValue('--text-primary').trim()
+                                        }
+                                    }
+                                }
+                            }
+                        });
+
+                        console.log('✅ Timeline chart created with', sortedGroups.length, 'data points');
+
+                    } catch (error) {
+                        console.error('Timeline chart creation failed:', error);
                     }
                 },
 
@@ -2115,23 +2830,13 @@
                     console.log('🔍 Filtering by root cause:', issue);
                     
                     // Clear all filters first
-                    this.filterDateFrom = '';
-                    this.filterDateTo = '';
-                    this.filterUsername = '';
-                    this.filterSearch = '';
-                    this.selectedCategory = null;
-                    this.currentPage = 1;
+                    this.resetAllFilters();
                     
                     // Apply filter based on issue type
                     switch(issue.type) {
+                        // Client errors (old types)
                         case 'fileignored':
                             this.filterSearch = 'FileIgnored';
-                            break;
-                        case 'http404':
-                            this.filterSearch = 'HTTP status 404';
-                            break;
-                        case 'http403':
-                            this.filterSearch = '403';
                             break;
                         case 'network':
                             this.filterSearch = 'network';
@@ -2142,18 +2847,36 @@
                         case 'syncerror':
                             this.filterSearch = 'SyncError';
                             break;
-                        case 'objectstore':
-                            this.selectedCategory = 'objectstore_errors';
+                        
+                        // Functional categories (NEW)
+                        case 'storage':
+                            this.selectedCategories = ['storage'];
                             break;
-                        case 's3_503':
-                            this.selectedCategory = 's3_errors';
-                            this.filterSearch = '503';
+                        case 'file_sync':
+                            this.selectedCategories = ['file_sync'];
                             break;
-                        case 'dav':
-                            this.selectedCategory = 'dav_errors';
+                        case 'php_runtime':
+                            this.selectedCategories = ['php_runtime'];
                             break;
-                        case 'php':
-                            this.selectedCategory = 'php_errors';
+                        case 'database':
+                            this.selectedCategories = ['database'];
+                            break;
+                        case 'authentication':
+                            this.selectedCategories = ['authentication'];
+                            break;
+                        case 'security':
+                            this.selectedCategories = ['security'];
+                            break;
+                        case 'background_jobs':
+                            this.selectedCategories = ['background_jobs'];
+                            break;
+                        
+                        // Specific system issues
+                        case 'disk_full':
+                            this.filterSearch = 'disk space';
+                            break;
+                        case 'permissions':
+                            this.filterSearch = 'permission denied';
                             break;
                         case 'storage_unavailable':
                             this.filterSearch = 'StorageNotAvailableException';
@@ -2168,11 +2891,24 @@
                             this.filterSearch = 'workflowengine';
                             break;
                         case 'dav_redis':
-                            this.filterCategory = 'dav_errors';
+                            this.selectedCategories = ['file_sync'];
+                            this.filterSearch = 'redis';
                             break;
+                        
+                        // Fallback: use filterCriteria if available
+                        default:
+                            if (issue.filterCriteria) {
+                                if (issue.filterCriteria.category) {
+                                    this.selectedCategories = [issue.filterCriteria.category];
+                                }
+                                if (issue.filterCriteria.search) {
+                                    this.filterSearch = issue.filterCriteria.search;
+                                }
+                            }
                     }
                     
-                    this.filtersApplied = true;
+                    // CRITICAL: Actually apply the filters!
+                    this.applyFilters();
                     
                     // Scroll to entries table
                     this.$nextTick(() => {
