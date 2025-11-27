@@ -265,6 +265,111 @@
             color: var(--text-secondary);
         }
 
+        /* Multi-Category Filter */
+        .multi-category-container {
+            background: var(--stat-bg);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            border: 2px solid #667eea;
+        }
+
+        .multi-category-container strong {
+            font-size: 15px;
+            color: #667eea;
+        }
+
+        .multi-category-container span {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-left: 10px;
+        }
+
+        .category-checkbox-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            padding: 8px;
+            background: var(--card-bg);
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+            transition: all 0.2s;
+        }
+
+        .category-checkbox-label input {
+            cursor: pointer;
+        }
+
+        .category-checkbox-label span:first-of-type {
+            font-size: 13px;
+            flex: 1;
+            color: var(--text-primary);
+        }
+
+        .category-checkbox-label span:last-of-type {
+            font-size: 12px;
+            color: #667eea;
+            font-weight: bold;
+        }
+
+        /* Advanced Filter Section */
+        .advanced-filter-container {
+            background: var(--stat-bg);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+
+        .advanced-filter-container label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .advanced-filter-container input[type="date"],
+        .advanced-filter-container input[type="text"],
+        .advanced-filter-container select {
+            padding: 8px;
+            border: 1px solid var(--input-border);
+            border-radius: 4px;
+            font-size: 14px;
+            background: var(--input-bg);
+            color: var(--text-primary);
+        }
+
+        .advanced-filter-container input[type="text"]::placeholder {
+            color: var(--text-tertiary);
+        }
+
+        .advanced-filter-container select {
+            cursor: pointer;
+        }
+
+        .advanced-filter-container code {
+            background: var(--stat-bg);
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-family: monospace;
+            font-size: 10px;
+            color: var(--text-secondary);
+        }
+
+        .filter-active-display {
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .filter-active-display strong {
+            color: var(--text-primary);
+        }
+
+        .filter-active-display span {
+            color: var(--text-secondary);
+        }
+
         .badge {
             display: inline-block;
             padding: 4px 8px;
@@ -500,10 +605,15 @@
             background: var(--stat-bg);
             border-radius: 6px;
             line-height: 1.5;
+            color: var(--text-secondary);
         }
 
         .root-cause-suggestion strong {
             color: var(--text-primary);
+        }
+
+        .root-cause-suggestion span {
+            color: var(--text-secondary);
         }
 
         /* Dark Mode Severity Colors */
@@ -711,22 +821,21 @@
                 </div>
 
                 <!-- Multi-Category Filter NEW -->
-                <div style="background: #f0f4ff; padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 2px solid #667eea;">
+                <div class="multi-category-container">
                     <div style="margin-bottom: 10px;">
-                        <strong style="font-size: 15px; color: #667eea;">📂 Multi-Category Filter</strong>
-                        <span style="font-size: 12px; color: #666; margin-left: 10px;">Mehrere Kategorien gleichzeitig auswählen</span>
+                        <strong>📂 Multi-Category Filter</strong>
+                        <span>Mehrere Kategorien gleichzeitig auswählen</span>
                     </div>
                     <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px;">
                         <template x-for="(count, category) in result.categories" :key="category">
-                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 8px; background: white; border-radius: 6px; border: 1px solid #ddd; transition: all 0.2s;" 
-                                   :style="selectedCategories.includes(category) ? 'border-color: #667eea; background: #f0f4ff;' : ''">
+                            <label class="category-checkbox-label" 
+                                   :style="selectedCategories.includes(category) ? 'border-color: #667eea; background: rgba(102, 126, 234, 0.1);' : ''">
                                 <input type="checkbox" 
                                        :value="category" 
                                        x-model="selectedCategories"
-                                       @change="applyFilters()"
-                                       style="cursor: pointer;">
-                                <span style="font-size: 13px; flex: 1;" x-text="category"></span>
-                                <span style="font-size: 12px; color: #667eea; font-weight: bold;" x-text="count"></span>
+                                       @change="applyFilters()">
+                                <span x-text="category"></span>
+                                <span x-text="count"></span>
                             </label>
                         </template>
                     </div>
@@ -802,27 +911,24 @@
                 </div>
 
                 <!-- Advanced Filter Section -->
-                <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                <div class="advanced-filter-container">
                     <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
                         <!-- Date From -->
                         <div>
-                            <label style="font-size: 12px; color: #666; display: block; margin-bottom: 5px;">Von Datum:</label>
-                            <input type="date" x-model="filterDateFrom" 
-                                   style="padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
+                            <label>Von Datum:</label>
+                            <input type="date" x-model="filterDateFrom">
                         </div>
                         
                         <!-- Date To -->
                         <div>
-                            <label style="font-size: 12px; color: #666; display: block; margin-bottom: 5px;">Bis Datum:</label>
-                            <input type="date" x-model="filterDateTo" 
-                                   style="padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
+                            <label>Bis Datum:</label>
+                            <input type="date" x-model="filterDateTo">
                         </div>
                         
                         <!-- Username Filter -->
                         <div>
-                            <label style="font-size: 12px; color: #666; display: block; margin-bottom: 5px;">Username:</label>
-                            <select x-model="filterUsername" 
-                                    style="padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; width: 200px; cursor: pointer;">
+                            <label>Username:</label>
+                            <select x-model="filterUsername" style="width: 200px;">
                                 <option value="">Alle</option>
                                 <template x-for="user in availableUsers" :key="user">
                                     <option :value="user" x-text="user"></option>
@@ -833,17 +939,17 @@
                         <!-- Search Filter with Regex Toggle -->
                         <div style="flex: 1; min-width: 300px;">
                             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
-                                <label style="font-size: 12px; color: #666;">Suche:</label>
-                                <label style="font-size: 11px; color: #666; display: flex; align-items: center; gap: 5px; cursor: pointer;">
+                                <label style="margin-bottom: 0;">Suche:</label>
+                                <label style="font-size: 11px; display: flex; align-items: center; gap: 5px; cursor: pointer; color: var(--text-secondary);">
                                     <input type="checkbox" x-model="regexMode" style="cursor: pointer;">
                                     <span>🔍 Regex-Modus</span>
                                 </label>
                             </div>
                             <input type="text" x-model="filterSearch" 
                                    :placeholder="regexMode ? 'Regex: (error|warning).*file' : 'Dateiname, Nachricht, etc...'"
-                                   style="padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; width: 100%;"
+                                   style="width: 100%;"
                                    :style="regexMode ? 'font-family: monospace; background: #fffbf0; border-color: #ffa500;' : ''">
-                            <div x-show="regexMode" style="font-size: 10px; color: #999; margin-top: 3px;">
+                            <div x-show="regexMode" style="font-size: 10px; color: var(--text-tertiary); margin-top: 3px;">
                                 Beispiele: <code>error.*redis</code> | <code>(404|403)</code> | <code>user\d+</code>
                             </div>
                         </div>
@@ -860,8 +966,8 @@
                     </div>
                     
                     <!-- Active Filters Display -->
-                    <div x-show="hasActiveFilters()" style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #ddd;">
-                        <div style="font-size: 12px; color: #666;">
+                    <div x-show="hasActiveFilters()" class="filter-active-display">
+                        <div style="font-size: 12px;">
                             <strong>Aktive Filter:</strong>
                             <span x-show="filterDateFrom" style="margin-left: 10px;">
                                 📅 Von: <strong x-text="filterDateFrom"></strong>
