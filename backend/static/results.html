@@ -440,6 +440,73 @@
             color: var(--text-secondary);
         }
 
+        /* Pagination Styles */
+        .pagination-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 12px;
+            margin-top: 30px;
+            padding: 20px;
+            background: var(--stat-bg);
+            border-radius: 16px;
+            border: 1px solid var(--border-color);
+            flex-wrap: wrap;
+        }
+
+        .pagination-btn {
+            padding: 10px 20px;
+            border: 2px solid var(--border-color);
+            border-radius: 10px;
+            background: var(--card-bg);
+            color: var(--text-primary);
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            min-width: 44px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 4px var(--shadow-sm);
+        }
+
+        .pagination-btn:hover:not(:disabled) {
+            background: var(--global--color-ionos-blue);
+            color: white;
+            border-color: var(--global--color-ionos-blue);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 61, 143, 0.3);
+        }
+
+        .pagination-btn:active:not(:disabled) {
+            transform: translateY(0);
+        }
+
+        .pagination-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .pagination-btn-active {
+            background: var(--global--color-ionos-blue);
+            color: white;
+            border-color: var(--global--color-ionos-blue);
+            box-shadow: 0 4px 12px rgba(0, 61, 143, 0.3);
+        }
+
+        .pagination-pages {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .pagination-ellipsis {
+            padding: 10px 12px;
+            color: var(--text-tertiary);
+            font-weight: 600;
+        }
+
         .badge {
             display: inline-block;
             padding: 4px 8px;
@@ -1207,33 +1274,28 @@
                 </table>
 
                 <!-- Pagination -->
-                <div x-show="filteredEntries.length > 0 && totalPages > 1" 
-                     style="display: flex; justify-content: center; align-items: center; gap: 10px; margin-top: 20px; flex-wrap: wrap;">
+                <div x-show="filteredEntries.length > 0 && totalPages > 1" class="pagination-container">
                     <button @click="previousPage()" 
                             :disabled="currentPage === 1"
-                            class="btn btn-primary" 
-                            style="padding: 8px 16px; opacity: currentPage === 1 ? 0.5 : 1;">
+                            class="pagination-btn">
                         ← Zurück
                     </button>
                     
-                    <div style="display: flex; gap: 5px; flex-wrap: wrap;">
+                    <div class="pagination-pages">
                         <template x-for="page in totalPages > 10 ? [1, 2, '...', currentPage - 1, currentPage, currentPage + 1, '...', totalPages - 1, totalPages].filter((p, i, arr) => p > 0 && p <= totalPages && arr.indexOf(p) === i) : Array.from({length: totalPages}, (_, i) => i + 1)" :key="page">
                             <button x-show="page !== '...'" 
                                     @click="goToPage(page)" 
-                                    :class="currentPage === page ? 'btn-primary' : 'btn'"
-                                    class="btn" 
-                                    style="padding: 8px 12px; min-width: 40px;"
-                                    :style="currentPage === page ? 'background: #667eea; color: white;' : 'background: white; color: #333;'">
+                                    class="pagination-btn"
+                                    :class="currentPage === page ? 'pagination-btn-active' : ''">
                                 <span x-text="page"></span>
                             </button>
-                            <span x-show="page === '...'" style="padding: 8px 12px;">...</span>
+                            <span x-show="page === '...'" class="pagination-ellipsis">...</span>
                         </template>
                     </div>
                     
                     <button @click="nextPage()" 
                             :disabled="currentPage === totalPages"
-                            class="btn btn-primary" 
-                            style="padding: 8px 16px; opacity: currentPage === totalPages ? 0.5 : 1;">
+                            class="pagination-btn">
                         Weiter →
                     </button>
                 </div>
