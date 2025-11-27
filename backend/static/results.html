@@ -932,8 +932,9 @@
                                                       style="font-family: monospace; font-size: 11px;"
                                                       x-text="entry.error_code || '-'"></span>
                                             </td>
-                                            <td style="padding: 12px 18px 12px 18px; border-bottom: 1px solid #e2e8f0; max-width: 400px; word-wrap: break-word; word-break: break-word; white-space: normal;">
-                                                <span :title="entry.message" x-text="entry.message" style="display: block; overflow-wrap: break-word;"></span>
+                                            <td style="padding: 12px 18px; border-bottom: 1px solid #e2e8f0; max-width: 500px;">
+                                                <div :title="entry.message" x-text="entry.message" 
+                                                     style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 500px;"></div>
                                             </td>
                                             <td style="padding: 12px 8px 12px 18px; border-bottom: 1px solid #e2e8f0;">
                                                 <span class="badge badge-info" 
@@ -973,9 +974,9 @@
                                                         <span x-text="entry.line_number || '-'"></span>
                                                         
                                                         <strong>Nachricht:</strong>
-                                                        <span x-text="entry.message" style="word-break: break-word; display: block; overflow-wrap: break-word;"></span>
+                                                        <div x-text="entry.message" style="word-break: break-word; overflow-wrap: break-word; white-space: normal; margin-top: 5px; line-height: 1.5;"></div>
                                                         
-                                                        <strong>Rohe Logzeile:</strong>
+                                                        <strong style="display: block; margin-top: 15px;">Rohe Logzeile:</strong>
                                                         <pre x-text="entry.raw_line || 'Nicht verfügbar'" 
                                                              style="background: #2d3436; color: #dfe6e9; padding: 10px; border-radius: 4px; margin: 0; font-size: 12px; font-family: 'Courier New', monospace; white-space: pre-wrap; word-wrap: break-word; overflow-wrap: break-word; max-width: 100%;"></pre>
                                                     </div>
