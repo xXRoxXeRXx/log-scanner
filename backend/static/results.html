@@ -171,25 +171,25 @@
         }
 
         .chart-container {
-            background: white;
+            background: var(--card-bg);
             border-radius: 16px;
             padding: 30px;
             margin-bottom: 20px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 4px 20px var(--shadow-md);
         }
 
         .chart-title {
             font-size: 20px;
             font-weight: 600;
-            color: #333;
+            color: var(--text-primary);
             margin-bottom: 20px;
         }
 
         .entries-container {
-            background: white;
+            background: var(--card-bg);
             border-radius: 16px;
             padding: 30px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 4px 20px var(--shadow-md);
         }
 
         .entries-table {
@@ -199,12 +199,12 @@
         }
 
         .entries-table th {
-            background: #f8f9fa;
+            background: var(--table-header-bg);
             padding: 12px;
             text-align: left;
             font-weight: 600;
-            color: #333;
-            border-bottom: 2px solid #dee2e6;
+            color: var(--text-primary);
+            border-bottom: 2px solid var(--table-border);
             position: sticky;
             top: 0;
             z-index: 10;
@@ -212,16 +212,16 @@
 
         .entries-table td {
             padding: 12px;
-            border-bottom: 1px solid #dee2e6;
+            border-bottom: 1px solid var(--table-border);
             font-size: 14px;
-            color: #666;
+            color: var(--text-secondary);
         }
 
         .entries-table td:first-child {
             font-family: 'Courier New', monospace;
             font-size: 13px;
             white-space: nowrap;
-            color: #495057;
+            color: var(--text-secondary);
         }
 
         .entries-table td:nth-child(3) {
@@ -231,7 +231,38 @@
         }
 
         .entries-table tr:hover {
-            background: #f8f9fa;
+            background: var(--table-hover);
+        }
+
+        /* Table cell border for dark mode */
+        .table-cell-border {
+            border-bottom: 1px solid var(--table-border);
+        }
+
+        /* Detail row styles for dark mode */
+        .detail-row-bg {
+            background: var(--stat-bg) !important;
+        }
+
+        .detail-box {
+            background: var(--card-bg);
+            padding: 15px;
+            border-radius: 8px;
+            border: 2px solid #667eea;
+        }
+
+        .detail-box h4 {
+            margin: 0 0 15px 0;
+            color: #667eea;
+        }
+
+        .detail-box strong {
+            color: var(--text-primary);
+        }
+
+        .detail-box span,
+        .detail-box div {
+            color: var(--text-secondary);
         }
 
         .badge {
@@ -903,8 +934,8 @@
                                             <col style="width: 80px;">
                                         </colgroup>
                                         <tr style="cursor: pointer;" @click="selectedEntry = (selectedEntry === entry ? null : entry)">
-                                            <td x-text="entry.time" style="font-size: 12px; padding: 12px 8px 12px 8px; border-bottom: 1px solid #e2e8f0;"></td>
-                                            <td style="padding: 12px 8px 12px 18px; border-bottom: 1px solid #e2e8f0;">
+                                            <td x-text="entry.time" class="table-cell-border" style="font-size: 12px; padding: 12px 8px 12px 8px;"></td>
+                                            <td class="table-cell-border" style="padding: 12px 8px 12px 18px;">
                                                 <span class="badge"
                                                       :class="{
                                                           'badge-error': entry.type === 'ERROR',
@@ -913,22 +944,22 @@
                                                       }"
                                                       x-text="entry.type"></span>
                                             </td>
-                                            <td style="padding: 12px 8px 12px 18px; border-bottom: 1px solid #e2e8f0;">
+                                            <td class="table-cell-border" style="padding: 12px 8px 12px 18px;">
                                                 <span class="badge" 
                                                       :class="entry.error_code ? 'badge-error' : ''"
                                                       style="font-family: monospace; font-size: 11px;"
                                                       x-text="entry.error_code || '-'"></span>
                                             </td>
-                                            <td style="padding: 12px 18px; border-bottom: 1px solid #e2e8f0; max-width: 500px;">
+                                            <td class="table-cell-border" style="padding: 12px 18px; max-width: 500px;">
                                                 <div :title="entry.message" x-text="entry.message" 
                                                      style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 500px;"></div>
                                             </td>
-                                            <td style="padding: 12px 8px 12px 18px; border-bottom: 1px solid #e2e8f0;">
+                                            <td class="table-cell-border" style="padding: 12px 8px 12px 18px;">
                                                 <span class="badge badge-info" 
                                                       :style="selectedCategory === entry.category ? 'background: #667eea; font-weight: bold;' : ''"
                                                       x-text="entry.category"></span>
                                             </td>
-                                            <td style="padding: 12px 8px; border-bottom: 1px solid #e2e8f0; text-align: center;">
+                                            <td class="table-cell-border" style="padding: 12px 8px; text-align: center;">
                                                 <button class="btn" style="padding: 4px 8px; font-size: 12px; background: #667eea; color: white;" @click.stop="selectedEntry = (selectedEntry === entry ? null : entry)">
                                                     <span x-show="selectedEntry !== entry">👁️</span>
                                                     <span x-show="selectedEntry === entry">✕</span>
@@ -937,10 +968,10 @@
                                         </tr>
                                         
                                         <!-- Detail Row - shown/hidden with x-show -->
-                                        <tr x-show="selectedEntry === entry" style="background: #f8f9fa;">
+                                        <tr x-show="selectedEntry === entry" class="detail-row-bg">
                                             <td colspan="6" style="padding: 20px;">
-                                                <div style="background: white; padding: 15px; border-radius: 8px; border: 2px solid #667eea;">
-                                                    <h4 style="margin: 0 0 15px 0; color: #667eea;">📋 Details</h4>
+                                                <div class="detail-box">
+                                                    <h4>📋 Details</h4>
                                                     <div style="display: grid; grid-template-columns: auto 1fr; gap: 10px; font-size: 14px;">
                                                         <strong>Zeit:</strong>
                                                         <span x-text="entry.time"></span>
@@ -1421,6 +1452,12 @@
                     this.darkMode = !this.darkMode;
                     document.documentElement.setAttribute('data-theme', this.darkMode ? 'dark' : 'light');
                     localStorage.setItem('theme', this.darkMode ? 'dark' : 'light');
+                    
+                    // Recreate charts to apply new theme colors
+                    this.$nextTick(() => {
+                        this.createChart();
+                        this.createTimelineChart();
+                    });
                 },
 
                 async init() {
@@ -1581,7 +1618,10 @@
                             plugins: {
                                 legend: {
                                     display: true,
-                                    position: 'top'
+                                    position: 'top',
+                                    labels: {
+                                        color: getComputedStyle(document.documentElement).getPropertyValue('--text-primary').trim()
+                                    }
                                 },
                                 tooltip: {
                                     enabled: true,
@@ -1596,14 +1636,22 @@
                                 y: {
                                     beginAtZero: true,
                                     ticks: {
-                                        precision: 0
+                                        precision: 0,
+                                        color: getComputedStyle(document.documentElement).getPropertyValue('--text-secondary').trim()
+                                    },
+                                    grid: {
+                                        color: getComputedStyle(document.documentElement).getPropertyValue('--border-color').trim()
                                     }
                                 },
                                 x: {
                                     ticks: {
                                         autoSkip: false,
                                         maxRotation: 45,
-                                        minRotation: 45
+                                        minRotation: 45,
+                                        color: getComputedStyle(document.documentElement).getPropertyValue('--text-secondary').trim()
+                                    },
+                                    grid: {
+                                        color: getComputedStyle(document.documentElement).getPropertyValue('--border-color').trim()
                                     }
                                 }
                             }
@@ -1729,7 +1777,10 @@
                                 plugins: {
                                     legend: {
                                         display: true,
-                                        position: 'top'
+                                        position: 'top',
+                                        labels: {
+                                            color: getComputedStyle(document.documentElement).getPropertyValue('--text-primary').trim()
+                                        }
                                     },
                                     tooltip: {
                                         enabled: true,
@@ -1742,11 +1793,16 @@
                                     y: {
                                         beginAtZero: true,
                                         ticks: {
-                                            precision: 0
+                                            precision: 0,
+                                            color: getComputedStyle(document.documentElement).getPropertyValue('--text-secondary').trim()
                                         },
                                         title: {
                                             display: true,
-                                            text: 'Anzahl Fehler'
+                                            text: 'Anzahl Fehler',
+                                            color: getComputedStyle(document.documentElement).getPropertyValue('--text-primary').trim()
+                                        },
+                                        grid: {
+                                            color: getComputedStyle(document.documentElement).getPropertyValue('--border-color').trim()
                                         }
                                     },
                                     x: {
@@ -1754,11 +1810,16 @@
                                             autoSkip: true,
                                             maxRotation: 45,
                                             minRotation: 45,
-                                            maxTicksLimit: 24
+                                            maxTicksLimit: 24,
+                                            color: getComputedStyle(document.documentElement).getPropertyValue('--text-secondary').trim()
+                                        },
+                                        grid: {
+                                            color: getComputedStyle(document.documentElement).getPropertyValue('--border-color').trim()
                                         },
                                         title: {
                                             display: true,
-                                            text: 'Zeitpunkt'
+                                            text: 'Zeitpunkt',
+                                            color: getComputedStyle(document.documentElement).getPropertyValue('--text-primary').trim()
                                         }
                                     }
                                 }
