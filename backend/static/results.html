@@ -13,7 +13,6 @@
     
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.3/dist/cdn.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
     <style>
         /* CSS Variables for Light/Dark Theme */
         :root {
@@ -573,9 +572,6 @@
                         <button @click="downloadCSV()" class="download-btn" title="Als CSV exportieren">
                             📊 CSV
                         </button>
-                        <button @click="exportChartsAsPNG()" class="download-btn" title="Charts als PNG exportieren" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
-                            📸 Charts Export
-                        </button>
                     </div>
                 </div>
                 <p style="color: #666; font-size: 14px; margin-top: 5px;">
@@ -653,15 +649,6 @@
                     <canvas id="timelineChart" style="cursor: pointer;"></canvas>
                 </div>
             </div>
-
-            <!-- Heatmap Chart NEW -->
-            <div class="chart-container">
-                <div class="chart-title">🔥 Fehler-Heatmap <span style="font-size: 14px; color: #999; font-weight: normal;">(Wochentage × Stunden)</span></div>
-                <div style="position: relative; height: 400px; width: 100%;">
-                    <canvas id="heatmapChart"></canvas>
-                </div>
-            </div>
-
             <!-- Log Entries Table -->
             <div class="entries-container">
                 <!-- Quick Filters Section NEW -->
@@ -1400,63 +1387,6 @@
                     URL.revokeObjectURL(url);
                 },
                 
-                // Export all charts as PNG images
-                async exportChartsAsPNG() {
-                    console.log('📸 Exporting charts as PNG...');
-                    
-                    if (!window.html2canvas) {
-                        alert('⚠️ html2canvas ist nicht geladen. Bitte Seite neu laden.');
-                        return;
-                    }
-                    
-                    const charts = [
-                        { id: 'categoriesChart', name: 'categories' },
-                        { id: 'timelineChart', name: 'timeline' },
-                        { id: 'heatmapChart', name: 'heatmap' }
-                    ];
-                    
-                    for (const chart of charts) {
-                        const canvas = document.getElementById(chart.id);
-                        if (!canvas) {
-                            console.warn(`⚠️ Chart ${chart.id} nicht gefunden`);
-                            continue;
-                        }
-                        
-                        try {
-                            // Get the parent container for better quality
-                            const container = canvas.parentElement;
-                            
-                            // Use html2canvas to capture the chart
-                            const screenshot = await html2canvas(container, {
-                                scale: 2,  // Higher quality
-                                backgroundColor: '#ffffff',
-                                logging: false
-                            });
-                            
-                            // Convert to blob and download
-                            screenshot.toBlob((blob) => {
-                                const url = URL.createObjectURL(blob);
-                                const a = document.createElement('a');
-                                a.href = url;
-                                a.download = `chart_${chart.name}_${this.analysisId || 'result'}.png`;
-                                document.body.appendChild(a);
-                                a.click();
-                                document.body.removeChild(a);
-                                URL.revokeObjectURL(url);
-                                console.log(`✅ ${chart.name} chart exported`);
-                            });
-                            
-                            // Small delay between exports
-                            await new Promise(resolve => setTimeout(resolve, 500));
-                            
-                        } catch (error) {
-                            console.error(`❌ Error exporting ${chart.name}:`, error);
-                        }
-                    }
-                    
-                    alert('✅ Charts wurden als PNG exportiert!');
-                },
-                
                 escapeCsvValue(value) {
                     if (typeof value !== 'string') return value;
                     
@@ -1533,7 +1463,6 @@
                             setTimeout(() => {
                                 this.createChart();
                                 this.createTimelineChart();  // NEW: Create timeline chart
-                                this.createHeatmapChart();   // NEW: Create heatmap chart
                             }, 100);
                         });
 
@@ -1845,146 +1774,6 @@
 
                 // Create Heatmap Chart (Weekdays × Hours)
                 createHeatmapChart() {
-                    try {
-                        const canvas = document.getElementById('heatmapChart');
-                        if (!canvas) {
-                            console.error('❌ Heatmap canvas not found');
-                            return;
-                        }
-
-                        const ctx = canvas.getContext('2d');
-                        
-                        // Destroy existing chart if any
-                        if (this.heatmapChartInstance) {
-                            this.heatmapChartInstance.destroy();
-                        }
-
-                        const entries = this.result?.entries || [];
-                        if (entries.length === 0) {
-                            console.warn('⚠️ No entries for heatmap');
-                            return;
-                        }
-
-                        // Create 7×24 matrix: Weekdays (0=Sunday...6=Saturday) × Hours (0-23)
-                        const heatmapData = {};
-                        const weekdays = ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'];
-                        
-                        // Initialize matrix
-                        for (let day = 0; day < 7; day++) {
-                            heatmapData[day] = {};
-                            for (let hour = 0; hour < 24; hour++) {
-                                heatmapData[day][hour] = 0;
-                            }
-                        }
-
-                        // Fill matrix with entry counts
-                        entries.forEach(entry => {
-                            if (entry.timestamp) {
-                                const date = new Date(entry.timestamp);
-                                const day = date.getDay(); // 0=Sunday, 6=Saturday
-                                const hour = date.getHours();
-                                heatmapData[day][hour]++;
-                            }
-                        });
-
-                        // Convert to Chart.js format (Grouped Bar Chart)
-                        // Each dataset = one weekday, data = counts per hour
-                        const datasets = weekdays.map((dayName, dayIndex) => {
-                            const hourCounts = [];
-                            for (let hour = 0; hour < 24; hour++) {
-                                hourCounts.push(heatmapData[dayIndex][hour]);
-                            }
-                            
-                            // Color scheme: gradient from blue to red based on day
-                            const colors = [
-                                'rgba(99, 102, 241, 0.8)',   // Sunday - Blue
-                                'rgba(59, 130, 246, 0.8)',   // Monday
-                                'rgba(34, 197, 94, 0.8)',    // Tuesday - Green
-                                'rgba(234, 179, 8, 0.8)',    // Wednesday - Yellow
-                                'rgba(249, 115, 22, 0.8)',   // Thursday - Orange
-                                'rgba(239, 68, 68, 0.8)',    // Friday - Red
-                                'rgba(168, 85, 247, 0.8)'    // Saturday - Purple
-                            ];
-                            
-                            return {
-                                label: dayName,
-                                data: hourCounts,
-                                backgroundColor: colors[dayIndex],
-                                borderColor: colors[dayIndex].replace('0.8', '1'),
-                                borderWidth: 1
-                            };
-                        });
-
-                        const hours = Array.from({ length: 24 }, (_, i) => `${i}:00`);
-
-                        this.heatmapChartInstance = new Chart(ctx, {
-                            type: 'bar',
-                            data: {
-                                labels: hours,
-                                datasets: datasets
-                            },
-                            options: {
-                                responsive: true,
-                                maintainAspectRatio: false,
-                                interaction: {
-                                    mode: 'index',
-                                    intersect: false
-                                },
-                                plugins: {
-                                    legend: {
-                                        display: true,
-                                        position: 'top',
-                                        labels: {
-                                            boxWidth: 12,
-                                            padding: 10,
-                                            font: { size: 11 }
-                                        }
-                                    },
-                                    tooltip: {
-                                        callbacks: {
-                                            title: function(context) {
-                                                return `${context[0].dataset.label}, ${context[0].label} Uhr`;
-                                            },
-                                            label: function(context) {
-                                                return `${context.parsed.y} Fehler`;
-                                            }
-                                        }
-                                    }
-                                },
-                                scales: {
-                                    x: {
-                                        stacked: false,
-                                        title: {
-                                            display: true,
-                                            text: 'Uhrzeit'
-                                        },
-                                        ticks: {
-                                            maxRotation: 45,
-                                            minRotation: 45
-                                        }
-                                    },
-                                    y: {
-                                        stacked: false,
-                                        beginAtZero: true,
-                                        title: {
-                                            display: true,
-                                            text: 'Anzahl Fehler'
-                                        },
-                                        ticks: {
-                                            precision: 0
-                                        }
-                                    }
-                                }
-                            }
-                        });
-
-                        console.log('✅ Heatmap chart created with 7 weekdays × 24 hours');
-
-                    } catch (error) {
-                        console.error('Heatmap chart creation failed:', error);
-                    }
-                },
-
                 analyzeRootCause() {
                     console.log('🔍 Starting Root Cause Analysis...');
                     console.log('📊 Result entries:', this.result?.entries?.length);
