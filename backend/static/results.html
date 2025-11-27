@@ -80,65 +80,79 @@
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background: linear-gradient(to right, var(--global--color-ionos-blue), var(--global--color-dark-midnight));
+            background: linear-gradient(135deg, var(--global--color-ionos-blue) 0%, var(--global--color-dark-midnight) 100%);
             min-height: 100vh;
             padding: 20px;
+            line-height: 1.6;
         }
         
         .theme-toggle {
             position: fixed;
             top: 20px;
             right: 20px;
-            width: 48px;
-            height: 48px;
+            width: 52px;
+            height: 52px;
             border-radius: 50%;
             background: var(--container-bg);
-            border: 2px solid var(--border-color);
+            border: none;
             cursor: pointer;
-            font-size: 20px;
+            font-size: 22px;
             display: flex;
             align-items: center;
             justify-content: center;
-            box-shadow: 0 4px 12px var(--shadow-md);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
             z-index: 1000;
-            transition: all 0.3s ease;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
         
         .theme-toggle:hover {
-            transform: scale(1.1);
-            box-shadow: 0 6px 16px var(--shadow-md);
+            transform: translateY(-2px) scale(1.05);
+            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.2);
+        }
+
+        .theme-toggle:active {
+            transform: translateY(0) scale(0.98);
         }
 
         .container {
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 0 auto;
         }
 
         .header {
             background: var(--container-bg);
-            border-radius: 16px;
-            padding: 30px;
+            border-radius: 20px;
+            padding: 40px;
             margin-bottom: 20px;
             box-shadow: 0 4px 20px var(--shadow-sm);
         }
 
         h1 {
             color: var(--text-primary);
-            margin-bottom: 10px;
-            font-size: 28px;
+            margin-bottom: 12px;
+            font-size: 32px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            line-height: 1.2;
         }
 
         .back-link {
-            display: inline-block;
-            color: var(--link-color);
+            display: inline-flex;
+            align-items: center;
+            color: var(--global--color-ionos-blue);
             text-decoration: none;
-            margin-bottom: 15px;
-            font-size: 14px;
+            margin-bottom: 20px;
+            font-size: 15px;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            padding: 8px 12px;
+            border-radius: 8px;
         }
 
         .back-link:hover {
-            color: var(--link-hover);
-            text-decoration: underline;
+            background: rgba(0, 61, 143, 0.1);
+            color: #004ba3;
+            transform: translateX(-3px);
         }
 
         .stats-grid {
@@ -152,44 +166,64 @@
             background: var(--stat-bg);
             color: var(--text-primary);
             border: 1px solid var(--border-color);
-            padding: 20px;
-            border-radius: 12px;
+            padding: 24px;
+            border-radius: 16px;
             text-align: center;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 2px 8px var(--shadow-sm);
+        }
+
+        .stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 24px var(--shadow-md);
+            border-color: var(--global--color-ionos-blue);
         }
 
         .stat-value {
-            font-size: 32px;
-            font-weight: bold;
-            margin-bottom: 5px;
-            color: var(--link-color);
-        }
+            font-size: 36px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: var(--global--color-ionos-blue);
+            letter-spacing: -0.5px;
         }
 
         .stat-label {
             font-size: 14px;
-            opacity: 0.9;
+            opacity: 0.85;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
         .chart-container {
             background: var(--card-bg);
-            border-radius: 16px;
-            padding: 30px;
-            margin-bottom: 20px;
-            box-shadow: 0 4px 20px var(--shadow-md);
+            border-radius: 20px;
+            padding: 35px;
+            margin-bottom: 25px;
+            box-shadow: 0 8px 32px var(--shadow-md);
+            border: 1px solid var(--border-color);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .chart-container:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 40px var(--shadow-md);
         }
 
         .chart-title {
-            font-size: 20px;
-            font-weight: 600;
+            font-size: 22px;
+            font-weight: 700;
             color: var(--text-primary);
-            margin-bottom: 20px;
+            margin-bottom: 25px;
+            letter-spacing: -0.3px;
         }
 
         .entries-container {
             background: var(--card-bg);
-            border-radius: 16px;
-            padding: 30px;
-            box-shadow: 0 4px 20px var(--shadow-md);
+            border-radius: 20px;
+            padding: 35px;
+            box-shadow: 0 8px 32px var(--shadow-md);
+            border: 1px solid var(--border-color);
         }
 
         .entries-table {
@@ -268,33 +302,42 @@
         /* Multi-Category Filter */
         .multi-category-container {
             background: var(--stat-bg);
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 15px;
-            border: 2px solid #667eea;
+            padding: 20px;
+            border-radius: 16px;
+            margin-bottom: 20px;
+            border: 2px solid var(--global--color-ionos-blue);
+            box-shadow: 0 4px 16px var(--shadow-sm);
         }
 
         .multi-category-container strong {
-            font-size: 15px;
-            color: #667eea;
+            font-size: 16px;
+            color: var(--global--color-ionos-blue);
+            font-weight: 700;
         }
 
         .multi-category-container span {
-            font-size: 12px;
+            font-size: 13px;
             color: var(--text-secondary);
             margin-left: 10px;
+            font-weight: 500;
         }
 
         .category-checkbox-label {
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 10px;
             cursor: pointer;
-            padding: 8px;
+            padding: 12px 16px;
             background: var(--card-bg);
-            border-radius: 6px;
-            border: 1px solid var(--border-color);
-            transition: all 0.2s;
+            border-radius: 12px;
+            border: 2px solid var(--border-color);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .category-checkbox-label:hover {
+            border-color: var(--global--color-ionos-blue);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px var(--shadow-sm);
         }
 
         .category-checkbox-label input {
@@ -309,16 +352,43 @@
 
         .category-checkbox-label span:last-of-type {
             font-size: 12px;
-            color: #667eea;
-            font-weight: bold;
+            color: var(--global--color-ionos-blue);
+            font-weight: 700;
+        }
+
+        /* Quick Filter Styles */
+        .quick-filter-container {
+            background: linear-gradient(135deg, var(--global--color-ionos-blue) 0%, var(--global--color-dark-midnight) 100%);
+            padding: 20px;
+            border-radius: 16px;
+            margin-bottom: 20px;
+            color: white;
+            box-shadow: 0 4px 16px rgba(0, 61, 143, 0.3);
+        }
+
+        .quick-filter-btn {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            padding: 10px 20px;
+            font-size: 14px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.3);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .quick-filter-btn:hover {
+            background: rgba(255,255,255,0.35);
+            border-color: rgba(255,255,255,0.5);
+            transform: translateY(-2px);
         }
 
         /* Advanced Filter Section */
         .advanced-filter-container {
             background: var(--stat-bg);
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 15px;
+            padding: 20px;
+            border-radius: 16px;
+            margin-bottom: 20px;
+            border: 1px solid var(--border-color);
         }
 
         .advanced-filter-container label {
@@ -445,19 +515,28 @@
         }
 
         .btn {
-            padding: 10px 20px;
+            padding: 14px 32px;
             border: none;
-            border-radius: 8px;
+            border-radius: 12px;
             cursor: pointer;
-            font-size: 14px;
+            font-size: 15px;
             font-weight: 600;
             text-decoration: none;
             display: inline-block;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            letter-spacing: 0.3px;
         }
 
         .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: var(--global--color-ionos-blue);
             color: white;
+        }
+
+        .btn-primary:hover {
+            background: #004ba3;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 61, 143, 0.3);
         }
 
         .btn-danger {
@@ -465,23 +544,30 @@
             color: white;
         }
 
-        .btn:hover {
-            opacity: 0.9;
+        .btn-danger:hover {
+            background: #e84e5f;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 71, 87, 0.3);
+        }
+
+        .btn:active {
+            transform: translateY(0);
         }
 
         .actions {
-            margin-top: 20px;
+            margin-top: 25px;
             display: flex;
-            gap: 10px;
+            gap: 12px;
         }
 
         /* Root Cause Analysis Styles */
         .root-cause-container {
             background: var(--card-bg);
-            border-radius: 12px;
-            padding: 25px;
-            margin-bottom: 25px;
-            box-shadow: 0 2px 8px var(--shadow-sm);
+            border-radius: 16px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 20px var(--shadow-sm);
+            border: 1px solid var(--border-color);
         }
 
         .root-cause-header h3 {
@@ -655,23 +741,29 @@
 
         /* Download Button Styles */
         .download-btn {
-            background: linear-gradient(135deg, var(--global--color-ionos-blue) 0%, var(--global--color-dark-midnight) 100%);
+            background: var(--global--color-ionos-blue);
             color: white;
             border: none;
-            border-radius: 8px;
-            padding: 10px 20px;
+            border-radius: 12px;
+            padding: 12px 24px;
             font-size: 14px;
             font-weight: 600;
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             display: inline-flex;
             align-items: center;
-            gap: 5px;
+            gap: 8px;
+            box-shadow: 0 2px 8px rgba(0, 61, 143, 0.2);
         }
 
         .download-btn:hover {
+            background: #004ba3;
             transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0, 61, 143, 0.4);
+            box-shadow: 0 6px 20px rgba(0, 61, 143, 0.4);
+        }
+
+        .download-btn:active {
+            transform: translateY(0);
         }
     </style>
 </head>
@@ -793,28 +885,28 @@
             <!-- Log Entries Table -->
             <div class="entries-container">
                 <!-- Quick Filters Section NEW -->
-                <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 15px; border-radius: 8px; margin-bottom: 15px; color: white;">
-                    <div style="margin-bottom: 10px;">
-                        <strong style="font-size: 15px;">⚡ Quick Filters</strong>
-                        <span style="font-size: 12px; opacity: 0.9; margin-left: 10px;">Vordefinierte Filter für schnellen Zugriff</span>
+                <div class="quick-filter-container">
+                    <div style="margin-bottom: 15px;">
+                        <strong style="font-size: 16px; font-weight: 700;">⚡ Quick Filters</strong>
+                        <span style="font-size: 13px; opacity: 0.9; margin-left: 10px;">Vordefinierte Filter für schnellen Zugriff</span>
                     </div>
-                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                        <button @click="applyQuickFilter('errors')" class="btn" style="background: rgba(255,255,255,0.2); color: white; padding: 6px 12px; font-size: 13px; backdrop-filter: blur(10px);">
+                    <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                        <button @click="applyQuickFilter('errors')" class="btn quick-filter-btn">
                             🔴 Nur Errors
                         </button>
-                        <button @click="applyQuickFilter('warnings')" class="btn" style="background: rgba(255,255,255,0.2); color: white; padding: 6px 12px; font-size: 13px; backdrop-filter: blur(10px);">
+                        <button @click="applyQuickFilter('warnings')" class="btn quick-filter-btn">
                             🟡 Nur Warnings
                         </button>
-                        <button @click="applyQuickFilter('last_hour')" class="btn" style="background: rgba(255,255,255,0.2); color: white; padding: 6px 12px; font-size: 13px; backdrop-filter: blur(10px);">
+                        <button @click="applyQuickFilter('last_hour')" class="btn quick-filter-btn">
                             ⏰ Letzte Stunde
                         </button>
-                        <button @click="applyQuickFilter('last_24h')" class="btn" style="background: rgba(255,255,255,0.2); color: white; padding: 6px 12px; font-size: 13px; backdrop-filter: blur(10px);">
+                        <button @click="applyQuickFilter('last_24h')" class="btn quick-filter-btn">
                             📅 Letzte 24h
                         </button>
-                        <button @click="applyQuickFilter('critical')" class="btn" style="background: rgba(255,255,255,0.2); color: white; padding: 6px 12px; font-size: 13px; backdrop-filter: blur(10px);">
+                        <button @click="applyQuickFilter('critical')" class="btn quick-filter-btn">
                             💥 Kritisch
                         </button>
-                        <button @click="applyQuickFilter('with_users')" class="btn" style="background: rgba(255,255,255,0.2); color: white; padding: 6px 12px; font-size: 13px; backdrop-filter: blur(10px);">
+                        <button @click="applyQuickFilter('with_users')" class="btn quick-filter-btn">
                             👥 Mit User-Info
                         </button>
                     </div>
