@@ -5,6 +5,7 @@ on:
     branches: [ desktop ]
     tags:
       - 'v*-desktop'
+      - 'v*'
   pull_request:
     branches: [ desktop ]
   workflow_dispatch:  # Manual trigger
@@ -148,20 +149,28 @@ jobs:
           Nextcloud-Log-Analyzer-macOS/Nextcloud-Log-Analyzer.dmg
           Nextcloud-Log-Analyzer-Linux/Nextcloud-Log-Analyzer
         body: |
-          ## Desktop Version Release
+          ## 🚀 Nextcloud Log Analyzer Release
           
-          ### Downloads:
+          ### 📥 Desktop Downloads:
           - **Windows**: `Nextcloud-Log-Analyzer.exe` (~16 MB)
           - **macOS**: `Nextcloud-Log-Analyzer.dmg` (~18 MB)
           - **Linux**: `Nextcloud-Log-Analyzer` (~15 MB)
           
-          ### Installation:
-          - **Windows**: Einfach .exe herunterladen und starten
-          - **macOS**: DMG öffnen und App in Applications ziehen
-          - **Linux**: Executable herunterladen, `chmod +x` ausführen und starten
+          ### 📦 Installation:
+          - **Windows**: Simply download the .exe and run it
+          - **macOS**: Open the DMG and drag the app to Applications
+          - **Linux**: Download the executable, run `chmod +x Nextcloud-Log-Analyzer` and execute
           
-          ### Changelog:
-          See commit history for details.
+          ### 🌐 Web Version:
+          The web version can be run with:
+          ```bash
+          pip install -r requirements.txt
+          python log_scanner.py
+          ```
+          Then open http://localhost:8000 in your browser.
+          
+          ### 📝 Changelog:
+          See commit history and release notes for detailed changes.
           
         draft: false
         prerelease: false
