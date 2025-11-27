@@ -932,8 +932,8 @@
                                                       style="font-family: monospace; font-size: 11px;"
                                                       x-text="entry.error_code || '-'"></span>
                                             </td>
-                                            <td style="padding: 12px 18px 12px 18px; border-bottom: 1px solid #e2e8f0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-                                                <span :title="entry.message" x-text="entry.message"></span>
+                                            <td style="padding: 12px 18px 12px 18px; border-bottom: 1px solid #e2e8f0; max-width: 400px; word-wrap: break-word; word-break: break-word; white-space: normal;">
+                                                <span :title="entry.message" x-text="entry.message" style="display: block; overflow-wrap: break-word;"></span>
                                             </td>
                                             <td style="padding: 12px 8px 12px 18px; border-bottom: 1px solid #e2e8f0;">
                                                 <span class="badge badge-info" 
@@ -973,11 +973,11 @@
                                                         <span x-text="entry.line_number || '-'"></span>
                                                         
                                                         <strong>Nachricht:</strong>
-                                                        <span x-text="entry.message" style="word-break: break-word;"></span>
+                                                        <span x-text="entry.message" style="word-break: break-word; display: block; overflow-wrap: break-word;"></span>
                                                         
                                                         <strong>Rohe Logzeile:</strong>
                                                         <pre x-text="entry.raw_line || 'Nicht verfügbar'" 
-                                                             style="background: #2d3436; color: #dfe6e9; padding: 10px; border-radius: 4px; overflow-x: auto; margin: 0; font-size: 12px; font-family: 'Courier New', monospace;"></pre>
+                                                             style="background: #2d3436; color: #dfe6e9; padding: 10px; border-radius: 4px; margin: 0; font-size: 12px; font-family: 'Courier New', monospace; white-space: pre-wrap; word-wrap: break-word; overflow-wrap: break-word; max-width: 100%;"></pre>
                                                     </div>
                                                 </div>
                                             </td>
@@ -2721,23 +2721,13 @@
                     console.log('🔍 Filtering by root cause:', issue);
                     
                     // Clear all filters first
-                    this.filterDateFrom = '';
-                    this.filterDateTo = '';
-                    this.filterUsername = '';
-                    this.filterSearch = '';
-                    this.selectedCategory = null;
-                    this.currentPage = 1;
+                    this.resetAllFilters();
                     
                     // Apply filter based on issue type
                     switch(issue.type) {
+                        // Client errors (old types)
                         case 'fileignored':
                             this.filterSearch = 'FileIgnored';
-                            break;
-                        case 'http404':
-                            this.filterSearch = 'HTTP status 404';
-                            break;
-                        case 'http403':
-                            this.filterSearch = '403';
                             break;
                         case 'network':
                             this.filterSearch = 'network';
@@ -2748,18 +2738,36 @@
                         case 'syncerror':
                             this.filterSearch = 'SyncError';
                             break;
-                        case 'objectstore':
-                            this.selectedCategory = 'objectstore_errors';
+                        
+                        // Functional categories (NEW)
+                        case 'storage':
+                            this.selectedCategories = ['storage'];
                             break;
-                        case 's3_503':
-                            this.selectedCategory = 's3_errors';
-                            this.filterSearch = '503';
+                        case 'file_sync':
+                            this.selectedCategories = ['file_sync'];
                             break;
-                        case 'dav':
-                            this.selectedCategory = 'dav_errors';
+                        case 'php_runtime':
+                            this.selectedCategories = ['php_runtime'];
                             break;
-                        case 'php':
-                            this.selectedCategory = 'php_errors';
+                        case 'database':
+                            this.selectedCategories = ['database'];
+                            break;
+                        case 'authentication':
+                            this.selectedCategories = ['authentication'];
+                            break;
+                        case 'security':
+                            this.selectedCategories = ['security'];
+                            break;
+                        case 'background_jobs':
+                            this.selectedCategories = ['background_jobs'];
+                            break;
+                        
+                        // Specific system issues
+                        case 'disk_full':
+                            this.filterSearch = 'disk space';
+                            break;
+                        case 'permissions':
+                            this.filterSearch = 'permission denied';
                             break;
                         case 'storage_unavailable':
                             this.filterSearch = 'StorageNotAvailableException';
@@ -2774,11 +2782,24 @@
                             this.filterSearch = 'workflowengine';
                             break;
                         case 'dav_redis':
-                            this.filterCategory = 'dav_errors';
+                            this.selectedCategories = ['file_sync'];
+                            this.filterSearch = 'redis';
                             break;
+                        
+                        // Fallback: use filterCriteria if available
+                        default:
+                            if (issue.filterCriteria) {
+                                if (issue.filterCriteria.category) {
+                                    this.selectedCategories = [issue.filterCriteria.category];
+                                }
+                                if (issue.filterCriteria.search) {
+                                    this.filterSearch = issue.filterCriteria.search;
+                                }
+                            }
                     }
                     
-                    this.filtersApplied = true;
+                    // CRITICAL: Actually apply the filters!
+                    this.applyFilters();
                     
                     // Scroll to entries table
                     this.$nextTick(() => {
