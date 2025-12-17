@@ -3,7 +3,6 @@ Nextcloud Log Analyzer - FastAPI Backend
 Simplified Docker Web Deployment
 
 No Celery, No Redis, No PostgreSQL - Just FastAPI + Synchronous Processing
-Version: 1.0.6 - Security hardening and resource cleanup
 """
 
 import os
@@ -95,8 +94,7 @@ RATE_LIMIT_API = os.getenv("RATE_LIMIT_API", "30/minute")  # 30 API calls per mi
 # Create FastAPI app
 app = FastAPI(
     title="Nextcloud Log Analyzer",
-    description="Simple web-based log analysis for Nextcloud",
-    version="1.0.6"
+    description="Simple web-based log analysis for Nextcloud"
 )
 
 # Rate Limiting
@@ -206,7 +204,6 @@ async def startup_event():
     """Run on application startup"""
     logger.info("=" * 60)
     logger.info("Nextcloud Log Analyzer - Starting")
-    logger.info(f"Version: 1.0.6")
     logger.info(f"Max file size: {MAX_FILE_SIZE / (1024*1024):.0f} MB")
     logger.info(f"Authentication: {'ENABLED' if ENABLE_AUTH else 'DISABLED'}")
     logger.info(f"Auto-cleanup: {'ENABLED' if CLEANUP_ENABLED else 'DISABLED'} (retention: {CLEANUP_DAYS} days)")
@@ -356,8 +353,7 @@ async def get_config():
     """
     return {
         "auth_required": False,  # Web UI never requires auth (only API clients do)
-        "max_file_size_mb": MAX_FILE_SIZE / (1024 * 1024),
-        "version": "1.0.6"
+        "max_file_size_mb": MAX_FILE_SIZE / (1024 * 1024)
     }
 
 
