@@ -9,10 +9,12 @@ Version: 1.0.6 - Security hardening and resource cleanup
 import os
 import json
 import uuid
+import re
 import zipfile
 import tempfile
 import shutil
 import logging
+import asyncio
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Dict, List, Optional
@@ -308,6 +310,24 @@ def load_result(analysis_id: str) -> Optional[Dict]:
         return json.load(f)
 
 
+def validate_analysis_id(analysis_id: str) -> bool:
+    """
+    Validate analysis_id to prevent path traversal attacks.
+    Only allows valid UUID format.
+    
+    Args:
+        analysis_id: The ID to validate
+        
+    Returns:
+        True if valid UUID format, False otherwise
+    """
+    uuid_pattern = re.compile(
+        r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$',
+        re.IGNORECASE
+    )
+    return bool(uuid_pattern.match(analysis_id))
+
+
 # === API Endpoints ===
 
 @app.get("/")
@@ -456,6 +476,13 @@ async def get_results(request: Request, analysis_id: str, authenticated: bool = 
     - Log entries
     - Timestamp
     """
+    # Validate analysis_id to prevent path traversal
+    if not validate_analysis_id(analysis_id):
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid analysis ID format"
+        )
+    
     result = load_result(analysis_id)
     
     if result is None:
@@ -498,6 +525,13 @@ async def list_results(request: Request, authenticated: bool = Depends(verify_ap
 @limiter.limit(RATE_LIMIT_API)
 async def delete_result(request: Request, analysis_id: str, authenticated: bool = Depends(verify_api_key)):
     """Delete an analysis result"""
+    # Validate analysis_id to prevent path traversal
+    if not validate_analysis_id(analysis_id):
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid analysis ID format"
+        )
+    
     result_file = RESULTS_DIR / f"{analysis_id}.json"
     upload_dir = UPLOAD_DIR / analysis_id
     
