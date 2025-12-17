@@ -212,9 +212,8 @@ async def startup_event():
     logger.info(f"Auto-cleanup: {'ENABLED' if CLEANUP_ENABLED else 'DISABLED'} (retention: {CLEANUP_DAYS} days)")
     logger.info("=" * 60)
     
-    # Run initial cleanup
-    cleanup_old_results()
-app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
+    # Run cleanup in background (non-blocking)
+    asyncio.create_task(asyncio.to_thread(cleanup_old_results))
 
 
 # === Data Models ===
