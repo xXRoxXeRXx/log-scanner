@@ -265,20 +265,20 @@ def extract_zip_logs(zip_path: Path, extract_dir: Path) -> List[Path]:
                             with open(extract_path, 'wb') as target:
                                 shutil.copyfileobj(source, target)
                         log_files.append(extract_path)
-                        print(f"[ZIP] Extracted: {filename} ({extract_path.stat().st_size} bytes)")
+                        logger.debug(f"[ZIP] Extracted: {filename} ({extract_path.stat().st_size} bytes)")
     
     except zipfile.BadZipFile:
-        print(f"[ERROR] Invalid ZIP file: {zip_path}")
+        logger.error(f"Invalid ZIP file: {zip_path}")
         raise HTTPException(status_code=400, detail=f"Invalid ZIP file: {zip_path.name}")
     
     if not log_files:
-        print(f"[WARNING] No log files found in ZIP: {zip_path}")
+        logger.warning(f"No log files found in ZIP: {zip_path}")
         raise HTTPException(
             status_code=400, 
             detail="No log files found in ZIP archive. Expected files in 'logs/' directory with extensions: .log*, .txt, .gz"
         )
     
-    print(f"[ZIP] Extracted {len(log_files)} log files from {zip_path.name}")
+    logger.info(f"[ZIP] Extracted {len(log_files)} log files from {zip_path.name}")
     return log_files
 
 
@@ -427,13 +427,13 @@ async def upload_and_analyze(
         
         # Handle ZIP files
         if file_lower.endswith('.zip'):
-            print(f"[UPLOAD] ZIP file detected: {file.filename}")
+            logger.info(f"[UPLOAD] ZIP file detected: {file.filename}")
             extracted_files = extract_zip_logs(file_path, analysis_dir)
             files_to_analyze.extend(extracted_files)
             
             # Remove ZIP file after extraction
             file_path.unlink()
-            print(f"[CLEANUP] Removed ZIP file: {file.filename}")
+            logger.debug(f"[CLEANUP] Removed ZIP file: {file.filename}")
         else:
             # Regular log file
             files_to_analyze.append(file_path)
@@ -444,7 +444,7 @@ async def upload_and_analyze(
             detail="No valid log files found. For ZIP files, ensure logs are in 'logs/' directory."
         )
     
-    print(f"[ANALYZE] Processing {len(files_to_analyze)} log files...")
+    logger.info(f"[ANALYZE] Processing {len(files_to_analyze)} log files...")
     
     # Run analysis synchronously
     result = analyze_logs_sync(files_to_analyze)
