@@ -112,8 +112,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Directories (use absolute paths from project root)
-PROJECT_ROOT = Path(__file__).parent.parent  # Already defined for logs
+# Directories (use absolute paths from project root - PROJECT_ROOT defined above)
 UPLOAD_DIR = PROJECT_ROOT / "uploads"
 RESULTS_DIR = PROJECT_ROOT / "results"
 UPLOAD_DIR.mkdir(exist_ok=True)
