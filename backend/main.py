@@ -409,19 +409,26 @@ async def upload_and_analyze(
                 detail=f"Invalid file type: {file.filename}. Only .log*, .txt, .gz, .zip allowed"
             )
         
-        # Save file
+        # Save file with streaming (memory efficient for large files)
         file_path = analysis_dir / file.filename
+        file_size = 0
+        chunk_size = 1024 * 1024  # 1MB chunks
+        
         async with aiofiles.open(file_path, 'wb') as f:
-            content = await file.read()
-            
-            # Check file size (2GB limit)
-            if len(content) > MAX_FILE_SIZE:
-                raise HTTPException(
-                    status_code=400,
-                    detail=f"File too large: {file.filename} (max 2GB)"
-                )
-            
-            await f.write(content)
+            while chunk := await file.read(chunk_size):
+                file_size += len(chunk)
+                
+                # Check file size during streaming (2GB limit)
+                if file_size > MAX_FILE_SIZE:
+                    # Clean up partial file
+                    await f.close()
+                    file_path.unlink()
+                    raise HTTPException(
+                        status_code=400,
+                        detail=f"File too large: {file.filename} (max 2GB)"
+                    )
+                
+                await f.write(chunk)
         
         # Handle ZIP files
         if file_lower.endswith('.zip'):
