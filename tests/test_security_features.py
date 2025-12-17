@@ -216,8 +216,13 @@ def test_list_results_endpoint():
 
 
 def test_nonexistent_result():
-    """Test getting non-existent result returns 404"""
+    """Test getting non-existent result returns 404 or 400 (invalid UUID format)"""
+    # Test with invalid UUID format - should return 400
     response = client.get("/api/results/nonexistent-id-12345")
+    assert response.status_code == 400  # Invalid UUID format
+    
+    # Test with valid UUID format but non-existent - should return 404
+    response = client.get("/api/results/00000000-0000-0000-0000-000000000000")
     assert response.status_code in [404, 401]  # 404 or 401 if auth enabled
 
 

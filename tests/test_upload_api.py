@@ -96,7 +96,12 @@ def test_upload_rotated_log_files(tmp_path):
 
 def test_get_results_not_found():
     """Test getting non-existent result"""
+    # Test with invalid UUID format - should return 400
     response = client.get("/api/results/nonexistent-id")
+    assert response.status_code == 400  # Invalid UUID format
+    
+    # Test with valid UUID format but non-existent - should return 404
+    response = client.get("/api/results/00000000-0000-0000-0000-000000000000")
     assert response.status_code == 404
 
 
