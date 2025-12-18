@@ -641,7 +641,7 @@ async def list_results(request: Request, authenticated: bool = Depends(verify_ap
     return {"results": results, "count": len(results)}
 
 
-@app.get("/api/results/{analysis_id}/s3-errors.csv")
+@app.get("/api/results/{analysis_id}/s3-errors.md")
 @limiter.limit(RATE_LIMIT_API)
 async def export_s3_errors(
     request: Request, 
@@ -652,14 +652,14 @@ async def export_s3_errors(
     authenticated: bool = Depends(verify_api_key)
 ):
     """
-    Export S3 503 errors as CSV file
+    Export S3 503 errors as Markdown file
     
     Query parameters (optional):
     - bucket: Override S3 bucket name
     - region: Override S3 region
     - hostname: Override S3 hostname
     
-    Returns a CSV file with broken S3 objects.
+    Returns a Markdown file with broken S3 objects.
     """
     # Validate analysis_id to prevent path traversal
     if not validate_analysis_id(analysis_id):
@@ -709,47 +709,43 @@ async def export_s3_errors(
             detail="No S3 503 errors found in logs"
         )
     
-    # Format output as CSV
-    import csv
-    import io
+    # Format output as Markdown
+    output = []
     
-    output = io.StringIO(newline='')
-    writer = csv.writer(output, delimiter=';', quoting=csv.QUOTE_MINIMAL, lineterminator='\n')
+    # Write S3 config
+    output.append(f'# S3 503-Fehler Export\n\n')
+    output.append(f'## S3 Konfiguration\n\n')
+    output.append(f'- **Bucket**: `{s3_data["s3_config"]["bucket"]}`\n')
+    output.append(f'- **Region**: `{s3_data["s3_config"]["region"]}`\n')
+    output.append(f'- **Hostname**: `{s3_data["s3_config"]["hostname"]}`\n\n')
     
-    # Write S3 config as comment lines
-    output.write(f'# bucket: {s3_data["s3_config"]["bucket"]}\n')
-    output.write(f'# region: {s3_data["s3_config"]["region"]}\n')
-    output.write(f'# hostname: {s3_data["s3_config"]["hostname"]}\n')
-    output.write('\n')
+    output.append(f'## Betroffene Objekte ({s3_data["total_broken_objects"]} Dateien)\n\n')
     
-    # Write CSV header
-    writer.writerow(['Datei / Meldung', 'Anzahl', 'Letzter Zeitstempel', 'Beispiel Objekt ID'])
+    # Write Markdown table header
+    output.append('| Datei / Meldung | Anzahl | Letzter Zeitstempel | Beispiel Objekt ID |\n')
+    output.append('|---|---:|---|---|\n')
     
     # Write data rows
     for error in s3_data["errors"]:
-        writer.writerow([
-            error['file'],
-            error['count'],
-            error['last_timestamp'],
-            error['example_oid']
-        ])
+        # Escape pipe characters in filenames
+        filename = error['file'].replace('|', '\\|')
+        output.append(f'| `{filename}` | {error["count"]}x | {error["last_timestamp"]} | `{error["example_oid"]}` |\n')
     
-    # Get CSV content
-    csv_content = output.getvalue()
-    output.close()
+    # Create markdown content
+    markdown_content = "".join(output)
     
     # Save to temporary file
-    temp_file = tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.csv', encoding='utf-8-sig')
-    temp_file.write(csv_content)
+    temp_file = tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.md', encoding='utf-8')
+    temp_file.write(markdown_content)
     temp_file.close()
     
     # Return file as download
     return FileResponse(
         path=temp_file.name,
-        filename=f"s3-errors-{analysis_id}.csv",
-        media_type="text/csv; charset=utf-8",
+        filename=f"s3-errors-{analysis_id}.md",
+        media_type="text/markdown; charset=utf-8",
         headers={
-            "Content-Disposition": f'attachment; filename="s3-errors-{analysis_id}.csv"'
+            "Content-Disposition": f'attachment; filename="s3-errors-{analysis_id}.md"'
         }
     )
 

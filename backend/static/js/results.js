@@ -344,7 +344,7 @@
                     if (!this.analysisId) return;
                     
                     // Open S3 errors export endpoint in new window (will trigger download)
-                    const url = `/api/results/${this.analysisId}/s3-errors.csv`;
+                    const url = `/api/results/${this.analysisId}/s3-errors.md`;
                     window.open(url, '_blank');
                 },
                 
