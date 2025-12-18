@@ -235,6 +235,121 @@ class UploadResponse(BaseModel):
 
 # === Helper Functions ===
 
+def extract_s3_errors(log_content: str, s3_bucket: str = None, s3_region: str = None, s3_hostname: str = None) -> Dict:
+    """
+    Extract S3 503 errors from Nextcloud logs
+    
+    Args:
+        log_content: Raw log file content (JSON lines)
+        s3_bucket: Optional S3 bucket name override
+        s3_region: Optional S3 region override  
+        s3_hostname: Optional S3 hostname override
+        
+    Returns:
+        Dict with S3 configuration and broken objects grouped by filename
+    """
+    errors = {}  # file_path -> {count, last_timestamp, oids[]}
+    
+    # Default S3 config from logs (can be overridden)
+    config = {
+        "bucket": s3_bucket or "unknown",
+        "region": s3_region or "unknown", 
+        "hostname": s3_hostname or "unknown"
+    }
+    
+    for line in log_content.split('\n'):
+        line = line.strip()
+        if not line:
+            continue
+            
+        try:
+            entry = json.loads(line)
+            
+            # Try to extract S3 config from any entry with S3 URLs (before filtering)
+            if s3_bucket is None or s3_hostname is None or s3_region is None:
+                urls_to_check = []
+                
+                # Check exception message
+                if 'exception' in entry and isinstance(entry['exception'], dict):
+                    urls_to_check.append(entry['exception'].get('Message', ''))
+                
+                # Check main message (PHP errors often have URL here)
+                if 'message' in entry:
+                    urls_to_check.append(entry['message'])
+                
+                for url_text in urls_to_check:
+                    # Match: https://BUCKET.HOSTNAME/urn%3Aoid%3AXXXXX
+                    url_match = re.search(r'https://([^.]+)\.([^/]+)/', url_text)
+                    if url_match:
+                        if s3_bucket is None and config["bucket"] == "unknown":
+                            config["bucket"] = url_match.group(1)
+                        if s3_hostname is None and config["hostname"] == "unknown":
+                            config["hostname"] = url_match.group(2)
+                        if s3_region is None and config["region"] == "unknown":
+                            # Extract region from hostname (s3-REGION.ionoscloud.com)
+                            region_match = re.search(r's3-([^.]+)', url_match.group(2))
+                            if region_match:
+                                config["region"] = region_match.group(1)
+                        break  # Found URL, stop searching
+            
+            # Check for objectstore errors with 503 response
+            if (entry.get('app') == 'objectstore' and 
+                'message' in entry and
+                'Could not get object' in entry['message']):
+                
+                message = entry['message']
+                
+                # Extract urn:oid:XXXXX
+                oid_match = re.search(r'urn:oid:(\d+)', message)
+                if not oid_match:
+                    continue
+                oid = oid_match.group(0)  # Full urn:oid:XXXXX
+                
+                # Extract file path (__groupfolders/XX/filename or appdata_XXX/...)
+                file_match = re.search(r'for file (.+?)(?:\s|$)', message)
+                if not file_match:
+                    continue
+                file_path = file_match.group(1).strip()
+                
+                # Aggregate by file path
+                if file_path not in errors:
+                    errors[file_path] = {
+                        "count": 0,
+                        "last_timestamp": None,
+                        "oids": set()
+                    }
+                
+                errors[file_path]["count"] += 1
+                errors[file_path]["oids"].add(oid)
+                
+                # Update last timestamp
+                if 'time' in entry:
+                    timestamp = entry['time']
+                    if (errors[file_path]["last_timestamp"] is None or 
+                        timestamp > errors[file_path]["last_timestamp"]):
+                        errors[file_path]["last_timestamp"] = timestamp
+        
+        except (json.JSONDecodeError, KeyError, ValueError):
+            # Skip malformed lines
+            continue
+    
+    # Convert sets to lists and sort by count (descending)
+    result = []
+    for file_path, data in sorted(errors.items(), key=lambda x: x[1]["count"], reverse=True):
+        result.append({
+            "file": file_path,
+            "count": data["count"],
+            "last_timestamp": data["last_timestamp"] or "(N/A)",
+            "example_oid": sorted(list(data["oids"]))[0] if data["oids"] else "(N/A)"
+        })
+    
+    return {
+        "s3_config": config,
+        "errors": result,
+        "total_broken_objects": len(result)
+    }
+
+
 def extract_zip_logs(zip_path: Path, extract_dir: Path) -> List[Path]:
     """
     Extract log files from ZIP archive
@@ -520,6 +635,105 @@ async def list_results(request: Request, authenticated: bool = Depends(verify_ap
     results.sort(key=lambda x: x.get("timestamp", ""), reverse=True)
     
     return {"results": results, "count": len(results)}
+
+
+@app.get("/api/results/{analysis_id}/s3-errors.txt")
+@limiter.limit(RATE_LIMIT_API)
+async def export_s3_errors(
+    request: Request, 
+    analysis_id: str, 
+    bucket: Optional[str] = None,
+    region: Optional[str] = None,
+    hostname: Optional[str] = None,
+    authenticated: bool = Depends(verify_api_key)
+):
+    """
+    Export S3 503 errors as formatted text file
+    
+    Query parameters (optional):
+    - bucket: Override S3 bucket name
+    - region: Override S3 region
+    - hostname: Override S3 hostname
+    
+    Returns a formatted text file with broken S3 objects.
+    """
+    # Validate analysis_id to prevent path traversal
+    if not validate_analysis_id(analysis_id):
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid analysis ID format"
+        )
+    
+    # Check if analysis exists
+    upload_dir = UPLOAD_DIR / analysis_id
+    if not upload_dir.exists():
+        raise HTTPException(
+            status_code=404,
+            detail=f"Analysis {analysis_id} not found"
+        )
+    
+    # Read all log files from upload directory
+    log_files = list(upload_dir.glob("*.log*")) + list(upload_dir.glob("*.txt"))
+    if not log_files:
+        raise HTTPException(
+            status_code=404,
+            detail="No log files found for this analysis"
+        )
+    
+    # Combine all log content
+    combined_logs = ""
+    for log_file in log_files:
+        try:
+            with open(log_file, 'r', encoding='utf-8') as f:
+                combined_logs += f.read() + "\n"
+        except Exception as e:
+            logger.warning(f"Failed to read log file {log_file}: {e}")
+            continue
+    
+    if not combined_logs:
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to read log files"
+        )
+    
+    # Extract S3 errors
+    s3_data = extract_s3_errors(combined_logs, bucket, region, hostname)
+    
+    if s3_data["total_broken_objects"] == 0:
+        raise HTTPException(
+            status_code=404,
+            detail="No S3 503 errors found in logs"
+        )
+    
+    # Format output as Markdown table
+    output = []
+    output.append(f'"bucket": "{s3_data["s3_config"]["bucket"]}",\n')
+    output.append(f'"region": "{s3_data["s3_config"]["region"]}",\n')
+    output.append(f'"hostname": "{s3_data["s3_config"]["hostname"]}",\n')
+    output.append("\n")
+    output.append("Datei / Meldung\tAnzahl\tLetzter Zeitstempel\tBeispiel Objekt ID\n")
+    output.append("—\t—\t—\t—\n")
+    
+    for error in s3_data["errors"]:
+        output.append(f"{error['file']}\t{error['count']}x\t{error['last_timestamp']}\t{error['example_oid']}\n")
+    
+    # Create text file
+    output_text = "".join(output)
+    
+    # Save to temporary file
+    temp_file = tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.txt', encoding='utf-8')
+    temp_file.write(output_text)
+    temp_file.close()
+    
+    # Return file as download
+    return FileResponse(
+        path=temp_file.name,
+        filename=f"s3-errors-{analysis_id}.txt",
+        media_type="text/plain; charset=utf-8",
+        headers={
+            "Content-Disposition": f'attachment; filename="s3-errors-{analysis_id}.txt"'
+        }
+    )
 
 
 @app.delete("/api/results/{analysis_id}")

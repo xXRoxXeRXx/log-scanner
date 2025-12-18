@@ -340,6 +340,25 @@
                     URL.revokeObjectURL(url);
                 },
                 
+                downloadS3Errors() {
+                    if (!this.analysisId) return;
+                    
+                    // Open S3 errors export endpoint in new window (will trigger download)
+                    const url = `/api/results/${this.analysisId}/s3-errors.txt`;
+                    window.open(url, '_blank');
+                },
+                
+                get hasS3Errors() {
+                    // Check if any entries contain S3 objectstore errors
+                    if (!this.result?.entries) return false;
+                    
+                    return this.result.entries.some(entry => 
+                        entry.category === 'objectstore' || 
+                        (entry.message && entry.message.includes('Could not get object urn:oid'))
+                    );
+                }
+                },
+                
                 escapeCsvValue(value) {
                     if (typeof value !== 'string') return value;
                     
