@@ -278,16 +278,20 @@ def extract_s3_errors(log_content: str, s3_bucket: str = None, s3_region: str = 
                     urls_to_check.append(entry['message'])
                 
                 for url_text in urls_to_check:
-                    # Match: https://BUCKET.HOSTNAME/urn%3Aoid%3AXXXXX
-                    url_match = re.search(r'https://([^.]+)\.([^/]+)/', url_text)
+                    # Match: https://BUCKET.s3-REGION.PROVIDER.com/urn%3Aoid%3AXXXXX
+                    # Example: https://ionos-nextcloudbucket-live3-ru599954-14899957.s3-eu-central-2.ionoscloud.com/...
+                    url_match = re.search(r'https://([^.]+)\.(s3-[^.]+\.[^/]+)/', url_text)
                     if url_match:
+                        extracted_bucket = url_match.group(1)
+                        extracted_hostname = url_match.group(2)  # s3-eu-central-2.ionoscloud.com
+                        
                         if s3_bucket is None and config["bucket"] == "unknown":
-                            config["bucket"] = url_match.group(1)
+                            config["bucket"] = extracted_bucket
                         if s3_hostname is None and config["hostname"] == "unknown":
-                            config["hostname"] = url_match.group(2)
+                            config["hostname"] = extracted_hostname
                         if s3_region is None and config["region"] == "unknown":
-                            # Extract region from hostname (s3-REGION.ionoscloud.com)
-                            region_match = re.search(r's3-([^.]+)', url_match.group(2))
+                            # Extract region from hostname (s3-REGION.provider.com)
+                            region_match = re.search(r's3-([^.]+)', extracted_hostname)
                             if region_match:
                                 config["region"] = region_match.group(1)
                         break  # Found URL, stop searching
@@ -709,8 +713,8 @@ async def export_s3_errors(
     import csv
     import io
     
-    output = io.StringIO()
-    writer = csv.writer(output, delimiter=';', quoting=csv.QUOTE_MINIMAL)
+    output = io.StringIO(newline='')
+    writer = csv.writer(output, delimiter=';', quoting=csv.QUOTE_MINIMAL, lineterminator='\n')
     
     # Write S3 config as comment lines
     output.write(f'# bucket: {s3_data["s3_config"]["bucket"]}\n')
