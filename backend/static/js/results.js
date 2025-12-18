@@ -344,7 +344,7 @@
                     if (!this.analysisId) return;
                     
                     // Open S3 errors export endpoint in new window (will trigger download)
-                    const url = `/api/results/${this.analysisId}/s3-errors.txt`;
+                    const url = `/api/results/${this.analysisId}/s3-errors.csv`;
                     window.open(url, '_blank');
                 },
                 
@@ -356,7 +356,6 @@
                         entry.category === 'objectstore' || 
                         (entry.message && entry.message.includes('Could not get object urn:oid'))
                     );
-                }
                 },
                 
                 escapeCsvValue(value) {
